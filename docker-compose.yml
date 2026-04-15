@@ -1,0 +1,38 @@
+name: hirehub
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: hirehub_db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-hirehub}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hirehub_dev}
+      POSTGRES_DB: ${POSTGRES_DB:-hirehub}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-hirehub} -d ${POSTGRES_DB:-hirehub}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: hirehub_backend
+    env_file:
+      - .env
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend/app:/app/app
+    depends_on:
+      db:
+        condition: service_healthy
+    command: uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
+
+volumes:
+  postgres_data:
