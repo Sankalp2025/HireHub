@@ -1,22 +1,9 @@
 from fastapi import FastAPI
 
+from app.routers import health
 
+# Initialize the FastAPI application
 app = FastAPI(title="HireHub API", version="0.1.0")
 
-
-@app.get("/api/v1/health")
-
-async def health_check() -> dict:
-    
-    return {
-        
-        "data": {
-            
-            "status": "ok",
-            "db": "not_checked",
-            "analysis_engine": "ready",
-            
-        },
-        
-        "error": None,
-    }
+# Include the health check router
+app.include_router(health.router)
