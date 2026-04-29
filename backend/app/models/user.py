@@ -7,11 +7,13 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
-
+# This module defines the User model for the application, representing the users of the system and their associated attributes such as 
+# email, full name, hashed password, and account status.
 class User(Base):
     
     __tablename__ = "users"
 
+    # The unique identifier for each user, generated as a UUID and set as the primary key
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),
         primary_key=True,

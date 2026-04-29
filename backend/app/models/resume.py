@@ -7,7 +7,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
-
+# The Resume model represents a user's resume, including the title and content of the resume. 
+# It is linked to the User model and includes timestamps for creation and updates, as well as a soft delete mechanism using the deleted_at field.
 class Resume(Base):
     __tablename__ = "resumes"
 

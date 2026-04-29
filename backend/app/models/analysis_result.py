@@ -8,7 +8,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
-
+# The AnalysisResult model represents the results of analyzing a user's resume against a job description,
+# including match scores, missing skills, and suggestions for improvement. It is linked to the User model and optionally to Resume and JobDescription models.
 class AnalysisResult(Base):
     __tablename__ = "analysis_results"
 
