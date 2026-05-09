@@ -1,12 +1,13 @@
+import math
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
-from app.schemas.common import APIResponse
+from app.schemas.common import APIResponse, PaginatedResponse
 from app.schemas.resume import (
     ResumeCreateRequest,
     ResumeResponse,
@@ -20,10 +21,9 @@ from app.services.resume_service import (
     update_resume,
 )
 
-# Router for managing resume-related API endpoints, including creating, listing, retrieving, updating, and deleting resumes for authenticated users
 router = APIRouter(prefix="/api/v1/resumes", tags=["resumes"])
 
-# Endpoint to create a new resume for the authenticated user, accepting a ResumeCreateRequest body and returning the created resume in the response
+
 @router.post(
     "",
     response_model=APIResponse[ResumeResponse],
@@ -37,19 +37,30 @@ async def create_resume_endpoint(
     resume = await create_resume(db, current_user.id, request)
     return APIResponse(data=ResumeResponse.model_validate(resume), error=None)
 
-# Endpoint to list all resumes for the authenticated user, returning a list of ResumeResponse objects in the response
-@router.get("", response_model=APIResponse[list[ResumeResponse]])
+
+@router.get("", response_model=APIResponse[PaginatedResponse[ResumeResponse]])
 async def list_resumes_endpoint(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> APIResponse[list[ResumeResponse]]:
-    resumes = await list_resumes(db, current_user.id)
+) -> APIResponse[PaginatedResponse[ResumeResponse]]:
+    resumes, total = await list_resumes(db, current_user.id, page=page, per_page=per_page)
+    total_pages = math.ceil(total / per_page) if total > 0 else 0
     return APIResponse(
-        data=[ResumeResponse.model_validate(resume) for resume in resumes],
+        data=PaginatedResponse(
+            items=[ResumeResponse.model_validate(r) for r in resumes],
+            total=total,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1,
+        ),
         error=None,
     )
 
-# Endpoint to retrieve a specific resume by its ID for the authenticated user, returning the resume in the response if found, or a 404 error if not found
+
 @router.get("/{resume_id}", response_model=APIResponse[ResumeResponse])
 async def get_resume_endpoint(
     resume_id: UUID,
@@ -65,7 +76,7 @@ async def get_resume_endpoint(
 
     return APIResponse(data=ResumeResponse.model_validate(resume), error=None)
 
-# Endpoint to update an existing resume by its ID for the authenticated user, accepting a ResumeUpdateRequest body with the fields to update, 
+
 # and returning the updated resume in the response if found, or a 404 error if not found
 @router.patch("/{resume_id}", response_model=APIResponse[ResumeResponse])
 async def update_resume_endpoint(
@@ -83,7 +94,7 @@ async def update_resume_endpoint(
 
     return APIResponse(data=ResumeResponse.model_validate(resume), error=None)
 
-# Endpoint to delete a resume by its ID for the authenticated user, marking it as deleted and returning a 204 No Content response if successful, 
+
 # or a 404 error if not found
 @router.delete("/{resume_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_resume_endpoint(

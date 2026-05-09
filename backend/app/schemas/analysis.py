@@ -4,17 +4,13 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-# Schemas for managing analysis requests and responses, including validation for input data and structured responses for analysis results
 
-# The AnalyzeRequest schema defines the expected fields for requesting an analysis of a resume against a job description, allowing for either IDs 
-# or raw text inputs for both the resume and job description, with validation to ensure that at least one form of input is provided for each
 class AnalyzeRequest(BaseModel):
     resume_id: UUID | None = None
     jd_id: UUID | None = None
     resume_text: str | None = Field(default=None, min_length=50, max_length=50000)
     jd_text: str | None = Field(default=None, min_length=50, max_length=50000)
 
-    # Validation to ensure that either resume_id or resume_text is provided, and either jd_id or jd_text is provided, to prevent invalid analysis requests
     @model_validator(mode="after")
     def validate_inputs(self) -> "AnalyzeRequest":
         has_resume_input = self.resume_id is not None or self.resume_text is not None
@@ -27,16 +23,23 @@ class AnalyzeRequest(BaseModel):
 
         return self
 
-# The KeywordOverlapResponse schema defines the structure of the response for keyword overlap analysis, including lists of matched and missing keywords,
+
+class ScoreWeightsResponse(BaseModel):
+    keyword_score: Decimal
+    cosine_similarity_score: Decimal
+
+
 # the count of matched keywords, and the total number of keywords in the job description
 class KeywordOverlapResponse(BaseModel):
     matched: list[str]
     missing: list[str]
     matched_count: int
     total_jd_keywords: int
+    keyword_score: Decimal | None = None
+    cosine_similarity_score: Decimal | None = None
+    score_weights: ScoreWeightsResponse | None = None
 
-# The AnalysisResultResponse schema defines the structure of the response for an analysis result, including the IDs of the analysis, user, resume, and job description,
-# the match score, lists of missing skills and suggestions, the keyword overlap analysis, and the timestamp of when the analysis was performed
+
 class AnalysisResultResponse(BaseModel):
     id: UUID
     user_id: UUID

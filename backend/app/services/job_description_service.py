@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.job_description import JobDescription
@@ -10,7 +10,7 @@ from app.schemas.job_description import (
     JobDescriptionUpdateRequest,
 )
 
-# Service functions for managing job descriptions, including creating, listing, retrieving, updating, and deleting job descriptions for users
+
 async def create_job_description(
     db: AsyncSession,
     user_id: UUID,
@@ -28,24 +28,33 @@ async def create_job_description(
     await db.refresh(job_description)
     return job_description
 
-# Function to list all job descriptions for a user, excluding those that have been marked as deleted, 
-# and returning them in descending order of last update time
+
 async def list_job_descriptions(
     db: AsyncSession,
     user_id: UUID,
-) -> list[JobDescription]:
+    page: int = 1,
+    per_page: int = 20,
+) -> tuple[list[JobDescription], int]:
+    base_filter = (
+        JobDescription.user_id == user_id,
+        JobDescription.deleted_at.is_(None),
+    )
+
+    total: int = (
+        await db.execute(select(func.count(JobDescription.id)).where(*base_filter))
+    ).scalar_one()
+
     stmt = (
         select(JobDescription)
-        .where(
-            JobDescription.user_id == user_id,
-            JobDescription.deleted_at.is_(None),
-        )
+        .where(*base_filter)
         .order_by(JobDescription.updated_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
     )
     result = await db.execute(stmt)
-    return list(result.scalars().all())
+    return list(result.scalars().all()), total
 
-# Function to retrieve a specific job description by its ID for a user, ensuring it has not been marked as deleted, 
+
 # and returning the job description object if found
 async def get_job_description_by_id(
     db: AsyncSession,
@@ -60,7 +69,7 @@ async def get_job_description_by_id(
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
-# Function to update an existing job description for a user by its ID, applying any provided updates to the title, company, role, and content,
+
 # and returning the updated job description object if found
 async def update_job_description(
     db: AsyncSession,
@@ -68,36 +77,38 @@ async def update_job_description(
     job_description_id: UUID,
     request: JobDescriptionUpdateRequest,
 ) -> JobDescription | None:
-    job_description = await get_job_description_by_id(
-        db, user_id, job_description_id
-    )
+    job_description = await get_job_description_by_id(db, user_id, job_description_id)
     if job_description is None:
         return None
 
-    updates = request.model_dump(exclude_unset=True, exclude_none=True)
+    # exclude_unset=True: fields the client didn't send are skipped entirely.
+    # We do NOT also exclude_none so that nullable fields (company, role) can be cleared.
+    updates = request.model_dump(exclude_unset=True)
 
-    if "title" in updates:
+    # title and content are non-nullable — guard against an explicit null value.
+    if "title" in updates and updates["title"] is not None:
         job_description.title = updates["title"].strip()
-    if "company" in updates:
-        job_description.company = updates["company"].strip()
-    if "role" in updates:
-        job_description.role = updates["role"].strip()
-    if "content" in updates:
+    if "content" in updates and updates["content"] is not None:
         job_description.content = updates["content"].strip()
+    # company and role are nullable — None is a valid value that clears the field.
+    if "company" in updates:
+        val = updates["company"]
+        job_description.company = val.strip() if val is not None else None
+    if "role" in updates:
+        val = updates["role"]
+        job_description.role = val.strip() if val is not None else None
 
     await db.commit()
     await db.refresh(job_description)
     return job_description
 
-# Function to delete a job description for a user by its ID, marking it as deleted and returning True if successful, or False if not found  
+
 async def delete_job_description(
     db: AsyncSession,
     user_id: UUID,
     job_description_id: UUID,
 ) -> bool:
-    job_description = await get_job_description_by_id(
-        db, user_id, job_description_id
-    )
+    job_description = await get_job_description_by_id(db, user_id, job_description_id)
     if job_description is None:
         return False
 

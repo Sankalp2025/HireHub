@@ -1,13 +1,14 @@
+import math
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
 from app.dependencies import get_current_user
 from app.models.user import User
 from app.schemas.analysis import AnalysisResultResponse, AnalyzeRequest
-from app.schemas.common import APIResponse
+from app.schemas.common import APIResponse, PaginatedResponse
 from app.services.analysis_service import (
     AnalysisInputError,
     AnalysisResourceNotFoundError,
@@ -16,10 +17,9 @@ from app.services.analysis_service import (
     list_analyses,
 )
 
-# Router for managing analysis-related API endpoints, including creating new analyses, listing analyses for a user, and retrieving specific analysis results by ID
 router = APIRouter(prefix="/api/v1/analyses", tags=["analyses"])
 
-# Endpoint to create a new analysis for the authenticated user, accepting an AnalyzeRequest body and returning the created analysis result in the response
+
 @router.post(
     "",
     response_model=APIResponse[AnalysisResultResponse],
@@ -45,20 +45,30 @@ async def create_analysis_endpoint(
 
     return APIResponse(data=AnalysisResultResponse.model_validate(analysis), error=None)
 
-# Endpoint to list all analyses for the authenticated user, returning a list of AnalysisResultResponse objects in the response, 
-# ordered by analysis time in descending order
-@router.get("", response_model=APIResponse[list[AnalysisResultResponse]])
+
+@router.get("", response_model=APIResponse[PaginatedResponse[AnalysisResultResponse]])
 async def list_analyses_endpoint(
+    page: int = Query(1, ge=1),
+    per_page: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
-) -> APIResponse[list[AnalysisResultResponse]]:
-    analyses = await list_analyses(db, current_user.id)
+) -> APIResponse[PaginatedResponse[AnalysisResultResponse]]:
+    analyses, total = await list_analyses(db, current_user.id, page=page, per_page=per_page)
+    total_pages = math.ceil(total / per_page) if total > 0 else 0
     return APIResponse(
-        data=[AnalysisResultResponse.model_validate(analysis) for analysis in analyses],
+        data=PaginatedResponse(
+            items=[AnalysisResultResponse.model_validate(a) for a in analyses],
+            total=total,
+            page=page,
+            per_page=per_page,
+            total_pages=total_pages,
+            has_next=page < total_pages,
+            has_prev=page > 1,
+        ),
         error=None,
     )
 
-# Endpoint to retrieve a specific analysis result by its ID for the authenticated user, returning the analysis result in the response if found, 
+
 # or a 404 error if not found
 @router.get("/{analysis_id}", response_model=APIResponse[AnalysisResultResponse])
 async def get_analysis_endpoint(

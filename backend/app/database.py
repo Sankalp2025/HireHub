@@ -5,6 +5,7 @@ from sqlalchemy.orm import DeclarativeBase
 
 from app.config import settings
 
+
 # Base class for SQLAlchemy models
 class Base(DeclarativeBase):
     pass
@@ -13,6 +14,7 @@ class Base(DeclarativeBase):
 # Create the asynchronous database engine and session maker
 engine = create_async_engine(settings.database_url)
 AsyncSessionLocal = async_sessionmaker(engine, expire_on_commit=False)
+
 
 # Dependency to get an async database session
 async def get_db() -> AsyncGenerator[AsyncSession, None]:
