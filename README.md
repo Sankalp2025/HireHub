@@ -9,17 +9,27 @@ The backend MVP is working end-to-end.
 Implemented so far:
 - Dockerized FastAPI + PostgreSQL local setup
 - Health check endpoint with real database connectivity check
-- SQLAlchemy models and Alembic migrations
+- SQLAlchemy models and Alembic migrations (auto-run on container start)
 - JWT auth with Argon2 password hashing
+- Refresh token rotation and logout
+- Swagger-compatible OAuth2 token endpoint
 - Protected resume CRUD endpoints
 - Protected job description CRUD endpoints
-- Analysis creation and history endpoints
+- Analysis creation and history endpoints with TF-IDF + keyword scoring
 - Snapshot-based analysis persistence
+- Paginated list endpoints with configurable page size
+- Rate limiting on auth endpoints (10/minute per IP)
+- Consistent API error envelope across all endpoints
+- CORS middleware for frontend integration
+- 42-test integration and unit test suite
+- Ruff linting, pre-commit hooks, and GitHub Actions CI
 
 Current backend routes:
 - `GET /api/v1/health`
 - `POST /api/v1/auth/register`
 - `POST /api/v1/auth/login`
+- `POST /api/v1/auth/refresh`
+- `POST /api/v1/auth/logout`
 - `GET /api/v1/auth/me`
 - `POST /api/v1/resumes`
 - `GET /api/v1/resumes`
@@ -47,6 +57,14 @@ Backend:
 - PostgreSQL
 - PyJWT
 - pwdlib / Argon2
+- SlowAPI (rate limiting)
+- scikit-learn (TF-IDF analysis)
+
+Tooling:
+- Ruff (linting and formatting)
+- pre-commit
+- pytest + pytest-asyncio
+- GitHub Actions CI
 
 Infrastructure:
 - Docker
@@ -67,6 +85,17 @@ Start the app:
 
 ```bash
 docker compose up --build -d
+```
+
+Database migrations run automatically on backend container start
+(via `backend/entrypoint.sh`, which runs `alembic upgrade head`
+before launching uvicorn). No manual migration step is needed for
+local setup.
+
+To create a new migration after changing models:
+
+```bash
+docker compose exec backend alembic revision --autogenerate -m "your message"
 ```
 
 Check container status:
@@ -94,7 +123,7 @@ Expected response:
 }
 ```
 
-Open the interactive API docs:
+Open the interactive API docs (Swagger UI supports OAuth2 login via the Authorize button):
 
 ```text
 http://localhost:8000/docs
@@ -112,19 +141,52 @@ To fully reset the local database:
 docker compose down -v
 ```
 
+## Running Tests
+
+Tests run against a dedicated `hirehub_test` database (auto-created if it doesn't exist).
+
+```bash
+cd backend
+python3.12 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+pytest tests/ -v
+```
+
+The test suite requires a running PostgreSQL instance on `localhost:5432`. Start just the database with:
+
+```bash
+docker compose up -d db
+```
+
+## Linting
+
+```bash
+cd backend
+ruff check .
+ruff format .
+```
+
+Pre-commit hooks run ruff automatically on staged files:
+
+```bash
+pre-commit install
+```
+
 ## Analysis Approach
 
-The current analysis pipeline is intentionally simple and explainable.
+The analysis pipeline uses a weighted combination of keyword matching and TF-IDF cosine similarity (65% keyword, 35% cosine) for explainable scoring.
 
 It currently:
 - resolves resume and JD input from saved IDs or raw text
-- normalizes keywords using regex and lowercase matching
+- normalizes keywords using regex and lowercase matching with stopword filtering
 - computes matched and missing keywords
-- calculates a percentage-based match score
+- calculates TF-IDF cosine similarity between resume and JD text
+- produces a weighted final score with score breakdown in the response
 - generates rule-based suggestions
 - stores the full analysis result in PostgreSQL
 
-The backend also stores `resume_snapshot` and `jd_snapshot` inside each analysis result so historical analyses remain stable even if the original resume or job description changes later.
+The backend stores `resume_snapshot` and `jd_snapshot` inside each analysis result so historical analyses remain stable even if the original resume or job description changes later.
 
 ## Project Structure
 
@@ -138,21 +200,20 @@ backend/
     config.py
     database.py
     dependencies.py
+    limiter.py
     main.py
     security.py
   alembic/
+  tests/
   Dockerfile
+  entrypoint.sh
+  pyproject.toml
+  pytest.ini
   requirements.txt
 
-docs/
+.github/workflows/ci.yml
+.pre-commit-config.yaml
 docker-compose.yml
 .env.example
-outline.md
 README.md
 ```
-
-## Notes For Testing
-
-- Protected routes require a bearer token from `POST /api/v1/auth/login`.
-- In the current implementation, Swagger's OAuth2 authorize popup does not fully match the custom JSON login route, so protected endpoint testing is easiest with `curl` or Postman.
-- `localhost` is the expected host for local testing.

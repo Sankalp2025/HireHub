@@ -2,8 +2,16 @@ from app.schemas.analysis import (
     AnalysisResultResponse,
     AnalyzeRequest,
     KeywordOverlapResponse,
+    ScoreWeightsResponse,
 )
-from app.schemas.auth import LoginRequest, RegisterRequest, TokenResponse, UserResponse
+from app.schemas.auth import (
+    LoginRequest,
+    LogoutRequest,
+    RefreshTokenRequest,
+    RegisterRequest,
+    TokenResponse,
+    UserResponse,
+)
 from app.schemas.common import APIError, APIResponse, PaginatedResponse
 from app.schemas.job_description import (
     JobDescriptionCreateRequest,
@@ -22,11 +30,14 @@ __all__ = [
     "JobDescriptionUpdateRequest",
     "KeywordOverlapResponse",
     "LoginRequest",
+    "LogoutRequest",
     "PaginatedResponse",
+    "RefreshTokenRequest",
     "RegisterRequest",
     "ResumeCreateRequest",
     "ResumeResponse",
     "ResumeUpdateRequest",
+    "ScoreWeightsResponse",
     "TokenResponse",
     "UserResponse",
 ]

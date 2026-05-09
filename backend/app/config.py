@@ -1,12 +1,13 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 # Configuration settings for the application using Pydantic's BaseSettings
 class Settings(BaseSettings):
-    
     database_url: str
     secret_key: str
     algorithm: str = "HS256"
     access_token_expire_minutes: int = 60
+    refresh_token_expire_days: int = 7
     environment: str = "development"
     backend_cors_origins: list[str] = ["http://localhost:5173"]
 

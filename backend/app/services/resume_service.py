@@ -1,15 +1,13 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.resume import Resume
 from app.schemas.resume import ResumeCreateRequest, ResumeUpdateRequest
 
-# Service functions for managing resumes, including creating, listing, retrieving, updating, and deleting resumes for users
 
-# Function to create a new resume for a user, saving it to the database and returning the created resume object
 async def create_resume(
     db: AsyncSession,
     user_id: UUID,
@@ -25,20 +23,29 @@ async def create_resume(
     await db.refresh(resume)
     return resume
 
-# Function to list all resumes for a user, excluding those that have been marked as deleted, and returning them in descending order of last update time
+
+# Returns a page of resumes for a user (excluding soft-deleted) plus the total unpaged count.
 async def list_resumes(
     db: AsyncSession,
     user_id: UUID,
-) -> list[Resume]:
+    page: int = 1,
+    per_page: int = 20,
+) -> tuple[list[Resume], int]:
+    base_filter = (Resume.user_id == user_id, Resume.deleted_at.is_(None))
+
+    total: int = (await db.execute(select(func.count(Resume.id)).where(*base_filter))).scalar_one()
+
     stmt = (
         select(Resume)
-        .where(Resume.user_id == user_id, Resume.deleted_at.is_(None))
+        .where(*base_filter)
         .order_by(Resume.updated_at.desc())
+        .offset((page - 1) * per_page)
+        .limit(per_page)
     )
     result = await db.execute(stmt)
-    return list(result.scalars().all())
+    return list(result.scalars().all()), total
 
-# Function to retrieve a specific resume by its ID for a user, ensuring it has not been marked as deleted, and returning the resume object if found
+
 async def get_resume_by_id(
     db: AsyncSession,
     user_id: UUID,
@@ -52,7 +59,7 @@ async def get_resume_by_id(
     result = await db.execute(stmt)
     return result.scalar_one_or_none()
 
-# Function to update an existing resume for a user by its ID, applying any provided updates to the title and content, and returning the updated resume object if found
+
 async def update_resume(
     db: AsyncSession,
     user_id: UUID,
@@ -63,18 +70,21 @@ async def update_resume(
     if resume is None:
         return None
 
-    updates = request.model_dump(exclude_unset=True, exclude_none=True)
+    # exclude_unset=True: fields the client didn't send are skipped entirely.
+    # We do NOT also exclude_none so that nullable fields can be explicitly cleared.
+    updates = request.model_dump(exclude_unset=True)
 
-    if "title" in updates:
+    # title and content are non-nullable — guard against an explicit null value.
+    if "title" in updates and updates["title"] is not None:
         resume.title = updates["title"].strip()
-    if "content" in updates:
+    if "content" in updates and updates["content"] is not None:
         resume.content = updates["content"].strip()
 
     await db.commit()
     await db.refresh(resume)
     return resume
 
-# Function to delete a resume for a user by its ID, marking it as deleted by setting the deleted_at timestamp, and returning True if 
+
 # the resume was found and marked as deleted, or False if the resume was not found
 async def delete_resume(
     db: AsyncSession,

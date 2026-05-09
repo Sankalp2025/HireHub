@@ -7,8 +7,7 @@ from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
 
-# The JobDescription model represents a job description created by a user, including the title, company, role, and content of the job description. 
-# It is linked to the User model and includes timestamps for creation and updates, as well as a soft delete mechanism using the deleted_at field.
+
 class JobDescription(Base):
     __tablename__ = "job_descriptions"
 
