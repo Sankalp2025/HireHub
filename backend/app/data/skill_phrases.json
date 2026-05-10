@@ -1,0 +1,362 @@
+[
+  {
+    "phrase": "accounts payable",
+    "category": "domain_term",
+    "aliases": ["ap"]
+  },
+  {
+    "phrase": "accounts receivable",
+    "category": "domain_term",
+    "aliases": ["ar"]
+  },
+  {
+    "phrase": "agile development",
+    "category": "hard_skill",
+    "aliases": ["agile software development"]
+  },
+  {
+    "phrase": "api development",
+    "category": "hard_skill",
+    "aliases": ["api design", "api engineering"]
+  },
+  {
+    "phrase": "backend development",
+    "category": "hard_skill",
+    "aliases": ["back end development", "server side development"]
+  },
+  {
+    "phrase": "budgeting",
+    "category": "domain_term",
+    "aliases": ["budget management"]
+  },
+  {
+    "phrase": "business analysis",
+    "category": "domain_term",
+    "aliases": ["business requirements analysis"]
+  },
+  {
+    "phrase": "business development",
+    "category": "domain_term",
+    "aliases": ["sales development"]
+  },
+  {
+    "phrase": "care coordination",
+    "category": "domain_term",
+    "aliases": ["care management"]
+  },
+  {
+    "phrase": "change management",
+    "category": "soft_skill",
+    "aliases": ["organizational change management"]
+  },
+  {
+    "phrase": "ci/cd",
+    "category": "hard_skill",
+    "aliases": ["continuous integration", "continuous delivery", "continuous deployment"]
+  },
+  {
+    "phrase": "classroom management",
+    "category": "domain_term",
+    "aliases": ["classroom behavior management"]
+  },
+  {
+    "phrase": "clinical documentation",
+    "category": "domain_term",
+    "aliases": ["clinical charting"]
+  },
+  {
+    "phrase": "clinical workflows",
+    "category": "domain_term",
+    "aliases": ["clinical workflow"]
+  },
+  {
+    "phrase": "cloud deployment",
+    "category": "hard_skill",
+    "aliases": ["cloud deployments"]
+  },
+  {
+    "phrase": "cloud infrastructure",
+    "category": "hard_skill",
+    "aliases": ["cloud architecture"]
+  },
+  {
+    "phrase": "communication",
+    "category": "soft_skill",
+    "aliases": []
+  },
+  {
+    "phrase": "containerization",
+    "category": "hard_skill",
+    "aliases": ["container orchestration"]
+  },
+  {
+    "phrase": "cost accounting",
+    "category": "domain_term",
+    "aliases": []
+  },
+  {
+    "phrase": "critical thinking",
+    "category": "soft_skill",
+    "aliases": ["analytical thinking"]
+  },
+  {
+    "phrase": "curriculum development",
+    "category": "domain_term",
+    "aliases": ["curriculum design"]
+  },
+  {
+    "phrase": "customer service",
+    "category": "soft_skill",
+    "aliases": []
+  },
+  {
+    "phrase": "customer success",
+    "category": "domain_term",
+    "aliases": ["customer success management"]
+  },
+  {
+    "phrase": "data analysis",
+    "category": "hard_skill",
+    "aliases": ["data analytics"]
+  },
+  {
+    "phrase": "data pipelines",
+    "category": "hard_skill",
+    "aliases": ["etl pipelines", "data engineering pipelines"]
+  },
+  {
+    "phrase": "database design",
+    "category": "hard_skill",
+    "aliases": ["data modeling", "database modeling"]
+  },
+  {
+    "phrase": "differentiated instruction",
+    "category": "domain_term",
+    "aliases": ["instructional differentiation"]
+  },
+  {
+    "phrase": "electronic health records",
+    "category": "domain_term",
+    "aliases": ["ehr", "emr", "electronic medical records"]
+  },
+  {
+    "phrase": "financial analysis",
+    "category": "domain_term",
+    "aliases": []
+  },
+  {
+    "phrase": "financial modeling",
+    "category": "hard_skill",
+    "aliases": ["finance modeling"]
+  },
+  {
+    "phrase": "financial reporting",
+    "category": "domain_term",
+    "aliases": ["finance reporting"]
+  },
+  {
+    "phrase": "forecasting",
+    "category": "domain_term",
+    "aliases": ["financial forecasting", "business forecasting"]
+  },
+  {
+    "phrase": "frontend development",
+    "category": "hard_skill",
+    "aliases": ["front end development", "client side development"]
+  },
+  {
+    "phrase": "hipaa compliance",
+    "category": "domain_term",
+    "aliases": ["hipaa"]
+  },
+  {
+    "phrase": "individualized education plans",
+    "category": "domain_term",
+    "aliases": ["iep", "ieps", "individualized education plan"]
+  },
+  {
+    "phrase": "infection control",
+    "category": "domain_term",
+    "aliases": ["infection prevention"]
+  },
+  {
+    "phrase": "instructional design",
+    "category": "domain_term",
+    "aliases": ["learning design"]
+  },
+  {
+    "phrase": "leadership",
+    "category": "soft_skill",
+    "aliases": []
+  },
+  {
+    "phrase": "lesson planning",
+    "category": "domain_term",
+    "aliases": []
+  },
+  {
+    "phrase": "machine learning",
+    "category": "hard_skill",
+    "aliases": ["ml"]
+  },
+  {
+    "phrase": "medical coding",
+    "category": "domain_term",
+    "aliases": ["clinical coding"]
+  },
+  {
+    "phrase": "medication administration",
+    "category": "domain_term",
+    "aliases": []
+  },
+  {
+    "phrase": "object oriented programming",
+    "category": "hard_skill",
+    "aliases": ["object-oriented programming", "oop"]
+  },
+  {
+    "phrase": "operations management",
+    "category": "domain_term",
+    "aliases": ["business operations"]
+  },
+  {
+    "phrase": "patient assessment",
+    "category": "domain_term",
+    "aliases": ["patient assessments"]
+  },
+  {
+    "phrase": "patient care",
+    "category": "domain_term",
+    "aliases": []
+  },
+  {
+    "phrase": "patient education",
+    "category": "domain_term",
+    "aliases": ["health education"]
+  },
+  {
+    "phrase": "performance management",
+    "category": "soft_skill",
+    "aliases": ["employee performance management"]
+  },
+  {
+    "phrase": "portfolio management",
+    "category": "domain_term",
+    "aliases": ["investment portfolio management"]
+  },
+  {
+    "phrase": "problem solving",
+    "category": "soft_skill",
+    "aliases": ["problem-solving"]
+  },
+  {
+    "phrase": "process improvement",
+    "category": "soft_skill",
+    "aliases": ["continuous improvement"]
+  },
+  {
+    "phrase": "product management",
+    "category": "domain_term",
+    "aliases": ["product strategy"]
+  },
+  {
+    "phrase": "profit and loss analysis",
+    "category": "domain_term",
+    "aliases": ["p&l analysis", "pnl analysis"]
+  },
+  {
+    "phrase": "project management",
+    "category": "soft_skill",
+    "aliases": []
+  },
+  {
+    "phrase": "quality assurance",
+    "category": "hard_skill",
+    "aliases": ["qa"]
+  },
+  {
+    "phrase": "regression testing",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "phrase": "regulatory compliance",
+    "category": "domain_term",
+    "aliases": ["compliance management"]
+  },
+  {
+    "phrase": "requirements gathering",
+    "category": "domain_term",
+    "aliases": ["requirements analysis"]
+  },
+  {
+    "phrase": "rest api",
+    "category": "hard_skill",
+    "aliases": ["rest apis", "restful api", "restful apis"]
+  },
+  {
+    "phrase": "risk management",
+    "category": "domain_term",
+    "aliases": ["risk analysis"]
+  },
+  {
+    "phrase": "sales operations",
+    "category": "domain_term",
+    "aliases": ["sales ops"]
+  },
+  {
+    "phrase": "software engineering",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "phrase": "stakeholder management",
+    "category": "soft_skill",
+    "aliases": ["stakeholder communication"]
+  },
+  {
+    "phrase": "student assessment",
+    "category": "domain_term",
+    "aliases": ["learning assessment"]
+  },
+  {
+    "phrase": "system design",
+    "category": "hard_skill",
+    "aliases": ["systems design", "software architecture"]
+  },
+  {
+    "phrase": "teamwork",
+    "category": "soft_skill",
+    "aliases": ["collaboration"]
+  },
+  {
+    "phrase": "test automation",
+    "category": "hard_skill",
+    "aliases": ["automated testing"]
+  },
+  {
+    "phrase": "treatment planning",
+    "category": "domain_term",
+    "aliases": ["care planning"]
+  },
+  {
+    "phrase": "unit testing",
+    "category": "hard_skill",
+    "aliases": ["unit tests"]
+  },
+  {
+    "phrase": "user experience design",
+    "category": "hard_skill",
+    "aliases": ["ux design", "user interface design", "ui design"]
+  },
+  {
+    "phrase": "vendor management",
+    "category": "domain_term",
+    "aliases": ["supplier management"]
+  },
+  {
+    "phrase": "vital signs",
+    "category": "domain_term",
+    "aliases": ["vitals"]
+  }
+]

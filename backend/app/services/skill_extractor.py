@@ -5,8 +5,18 @@ from decimal import ROUND_HALF_UP, Decimal
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
+from app.services.skill_catalog import load_skill_phrases
+
 KEYWORD_SCORE_WEIGHT = Decimal("0.65")
 COSINE_SCORE_WEIGHT = Decimal("0.35")
+
+
+@dataclass(frozen=True)
+class SkillCandidate:
+    raw_text: str
+    normalized_text: str
+    source: str
+    category: str = "keyword"
 
 
 @dataclass(frozen=True)
@@ -18,13 +28,7 @@ class SkillMatchResult:
     keyword_score: Decimal
     cosine_similarity_score: Decimal
     final_score: Decimal
-
-
-@dataclass(frozen=True)
-class SkillCandidate:
-    raw_text: str
-    normalized_text: str
-    source: str
+    missing_by_category: dict[str, list[str]]
 
 
 _STOP_WORDS: frozenset[str] = frozenset(
@@ -64,28 +68,6 @@ _STOP_WORDS: frozenset[str] = frozenset(
     }
 )
 
-_SKILL_PHRASES: frozenset[str] = frozenset(
-    {
-        "api development",
-        "business analysis",
-        "clinical documentation",
-        "cloud deployment",
-        "customer service",
-        "data analysis",
-        "financial analysis",
-        "lesson planning",
-        "machine learning",
-        "medication administration",
-        "object oriented programming",
-        "patient care",
-        "project management",
-        "rest api",
-        "software engineering",
-        "unit testing",
-        "vital signs",
-    }
-)
-
 _ALIAS_MAP: dict[str, str] = {
     "apis": "api",
     "object-oriented programming": "object oriented programming",
@@ -98,44 +80,96 @@ def normalize_skill_text(text: str) -> str:
     normalized = normalized.replace("&", " and ")
     normalized = re.sub(r"[^a-z0-9+#.\s-]", " ", normalized)
     normalized = re.sub(r"\s+", " ", normalized)
-    normalized = normalized.strip()
+    normalized = normalized.strip(" .-")
     return _ALIAS_MAP.get(normalized, normalized)
 
 
-def make_skill_candidate(raw_text: str, source: str) -> SkillCandidate:
+def make_skill_candidate(
+    raw_text: str,
+    source: str,
+    category: str = "keyword",
+) -> SkillCandidate:
     return SkillCandidate(
         raw_text=raw_text,
         normalized_text=normalize_skill_text(raw_text),
         source=source,
+        category=category,
     )
 
 
 def normalize_keywords(text: str) -> set[str]:
     words = re.findall(r"[a-zA-Z][a-zA-Z0-9+#.-]*", text)
-    return {
-        normalize_skill_text(word)
-        for word in words
-        if len(word) > 1 and normalize_skill_text(word) not in _STOP_WORDS
-    }
+    normalized_words = {normalize_skill_text(word) for word in words if len(word) > 1}
+    return {word for word in normalized_words if word and word not in _STOP_WORDS}
 
 
-def extract_skill_phrases(text: str) -> set[str]:
+def _contains_phrase(normalized_text: str, normalized_phrase: str) -> bool:
+    pattern = rf"(?<!\w){re.escape(normalized_phrase)}(?!\w)"
+    return re.search(pattern, normalized_text) is not None
+
+
+def extract_skill_phrases(text: str) -> set[SkillCandidate]:
     normalized_text = normalize_skill_text(text)
-    return {phrase for phrase in _SKILL_PHRASES if phrase in normalized_text}
+    candidates: set[SkillCandidate] = set()
+
+    for skill_phrase in load_skill_phrases():
+        phrase_options = (skill_phrase.phrase, *skill_phrase.aliases)
+
+        for option in phrase_options:
+            normalized_option = normalize_skill_text(option)
+            if _contains_phrase(normalized_text, normalized_option):
+                candidates.add(
+                    SkillCandidate(
+                        raw_text=option,
+                        normalized_text=normalize_skill_text(skill_phrase.phrase),
+                        source="phrase",
+                        category=skill_phrase.category,
+                    )
+                )
+                break
+
+    return candidates
 
 
 def extract_skill_candidates(text: str) -> set[SkillCandidate]:
-    keyword_candidates = {
-        make_skill_candidate(keyword, "keyword") for keyword in normalize_keywords(text)
+    phrase_candidates = extract_skill_phrases(text)
+    phrase_component_terms = {
+        word
+        for candidate in phrase_candidates
+        for word in normalize_keywords(candidate.normalized_text)
     }
-    phrase_candidates = {
-        make_skill_candidate(phrase, "phrase") for phrase in extract_skill_phrases(text)
+    keyword_candidates = {
+        make_skill_candidate(keyword, "keyword")
+        for keyword in normalize_keywords(text)
+        if keyword not in phrase_component_terms
     }
     return keyword_candidates | phrase_candidates
 
 
 def extract_terms(text: str) -> set[str]:
     return {candidate.normalized_text for candidate in extract_skill_candidates(text)}
+
+
+def _candidate_map(candidates: set[SkillCandidate]) -> dict[str, SkillCandidate]:
+    candidate_map: dict[str, SkillCandidate] = {}
+
+    for candidate in sorted(candidates, key=lambda item: item.source == "keyword"):
+        candidate_map.setdefault(candidate.normalized_text, candidate)
+
+    return candidate_map
+
+
+def group_missing_by_category(
+    missing_terms: list[str],
+    jd_candidates: dict[str, SkillCandidate],
+) -> dict[str, list[str]]:
+    grouped: dict[str, list[str]] = {}
+
+    for term in missing_terms:
+        category = jd_candidates[term].category
+        grouped.setdefault(category, []).append(term)
+
+    return grouped
 
 
 def calculate_keyword_score(
@@ -147,6 +181,7 @@ def calculate_keyword_score(
 
     score = (Decimal(matched_count) / Decimal(total_jd_keywords)) * Decimal("100")
     return score.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
 
 def calculate_cosine_similarity_score(resume_text: str, jd_text: str) -> Decimal:
     vectorizer = TfidfVectorizer(
@@ -165,6 +200,7 @@ def calculate_cosine_similarity_score(resume_text: str, jd_text: str) -> Decimal
     score = Decimal(str(similarity * 100))
     return score.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
+
 def calculate_final_score(
     keyword_score: Decimal,
     cosine_score: Decimal,
@@ -174,13 +210,14 @@ def calculate_final_score(
 
 
 def compare_resume_to_jd(resume_text: str, jd_text: str) -> SkillMatchResult:
-    resume_keywords = extract_terms(resume_text)
-    jd_keywords = extract_terms(jd_text)
+    resume_candidates = _candidate_map(extract_skill_candidates(resume_text))
+    jd_candidates = _candidate_map(extract_skill_candidates(jd_text))
 
-    matched = sorted(resume_keywords & jd_keywords)
-    missing = sorted(jd_keywords - resume_keywords)
+    matched = sorted(resume_candidates.keys() & jd_candidates.keys())
+    missing = sorted(jd_candidates.keys() - resume_candidates.keys())
+    missing_by_category = group_missing_by_category(missing, jd_candidates)
 
-    keyword_score = calculate_keyword_score(len(matched), len(jd_keywords))
+    keyword_score = calculate_keyword_score(len(matched), len(jd_candidates))
     cosine_score = calculate_cosine_similarity_score(resume_text, jd_text)
     final_score = calculate_final_score(keyword_score, cosine_score)
 
@@ -188,8 +225,9 @@ def compare_resume_to_jd(resume_text: str, jd_text: str) -> SkillMatchResult:
         matched=matched,
         missing=missing,
         matched_count=len(matched),
-        total_jd_keywords=len(jd_keywords),
+        total_jd_keywords=len(jd_candidates),
         keyword_score=keyword_score,
         cosine_similarity_score=cosine_score,
         final_score=final_score,
+        missing_by_category=missing_by_category,
     )

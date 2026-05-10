@@ -25,12 +25,51 @@ class AnalysisResourceNotFoundError(LookupError):
     pass
 
 
-def _generate_suggestions(resume_text: str, missing_skills: list[str]) -> list[str]:
+def _generate_suggestions(
+    resume_text: str,
+    missing_skills: list[str],
+    missing_by_category: dict[str, list[str]],
+) -> list[str]:
     suggestions: list[str] = []
+    hard_skills = missing_by_category.get("hard_skill", [])
+    soft_skills = missing_by_category.get("soft_skill", [])
+    domain_terms = missing_by_category.get("domain_term", [])
+    keywords = missing_by_category.get("keyword", [])
 
-    if missing_skills:
-        top_missing = ", ".join(missing_skills[:5])
-        suggestions.append(f"Add evidence of these skills if you have them: {top_missing}.")
+    if hard_skills:
+        suggestions.append(
+            "Add evidence of these role-specific skills if you have them: "
+            + ", ".join(hard_skills[:5])
+            + "."
+        )
+
+    if domain_terms:
+        suggestions.append(
+            "Highlight relevant domain experience for: "
+            + ", ".join(domain_terms[:5])
+            + "."
+        )
+
+    if soft_skills:
+        suggestions.append(
+            "Show these soft skills through specific examples instead of listing them directly: "
+            + ", ".join(soft_skills[:3])
+            + "."
+        )
+
+    if not hard_skills and not domain_terms and not soft_skills and keywords:
+        suggestions.append(
+            "Consider aligning your resume language with these JD terms: "
+            + ", ".join(keywords[:5])
+            + "."
+        )
+
+    if missing_skills and not suggestions:
+        suggestions.append(
+            "Add evidence of these skills if you have them: "
+            + ", ".join(missing_skills[:5])
+            + "."
+        )
 
     if not re.search(r"\b\d+[%+]?\b", resume_text):
         suggestions.append("Use more quantified bullet points to show measurable impact.")
@@ -107,8 +146,13 @@ async def create_analysis(
             "keyword_score": str(KEYWORD_SCORE_WEIGHT),
             "cosine_similarity_score": str(COSINE_SCORE_WEIGHT),
         },
+        "missing_by_category": match_result.missing_by_category,
     }
-    suggestions = _generate_suggestions(resume_text, match_result.missing)
+    suggestions = _generate_suggestions(
+        resume_text,
+        match_result.missing,
+        match_result.missing_by_category,
+    )
 
     analysis = AnalysisResult(
         user_id=user_id,

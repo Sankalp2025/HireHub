@@ -38,6 +38,7 @@ class KeywordOverlapResponse(BaseModel):
     keyword_score: Decimal | None = None
     cosine_similarity_score: Decimal | None = None
     score_weights: ScoreWeightsResponse | None = None
+    missing_by_category: dict[str, list[str]] | None = None
 
 
 class AnalysisResultResponse(BaseModel):
