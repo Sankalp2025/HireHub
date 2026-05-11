@@ -1,11 +1,8 @@
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
 import './App.css'
-
-type PlaceholderPageProps = {
-  eyebrow: string
-  title: string
-  description: string
-}
+import { isLoggedIn } from './lib/auth'
+import LoginPage from './pages/LoginPage'
+import RegisterPage from './pages/RegisterPage'
 
 function HomePage() {
   const features = [
@@ -83,13 +80,19 @@ function HomePage() {
   )
 }
 
-function PlaceholderPage({ eyebrow, title, description }: PlaceholderPageProps) {
+function DashboardPage() {
+  const loggedIn = isLoggedIn()
+
   return (
     <main className="page">
       <section className="placeholder-panel">
-        <p className="eyebrow">{eyebrow}</p>
-        <h1>{title}</h1>
-        <p className="hero-text">{description}</p>
+        <p className="eyebrow">Workspace</p>
+        <h1>{loggedIn ? 'You are signed in.' : 'Dashboard page coming next.'}</h1>
+        <p className="hero-text">
+          {loggedIn
+            ? 'Your tokens are stored in the browser, which means the login flow is working. Next we’ll use that session to fetch the current user and protect private pages.'
+            : 'This route will become the authenticated workspace for resumes, job descriptions, and analysis history.'}
+        </p>
       </section>
     </main>
   )
@@ -119,34 +122,13 @@ function AppShell() {
         <Route path="/" element={<HomePage />} />
         <Route
           path="/login"
-          element={
-            <PlaceholderPage
-              eyebrow="Authentication"
-              title="Login page coming next."
-              description="This route is ready. Our next step will be turning it into a real form connected to the FastAPI auth endpoints."
-            />
-          }
+          element={<LoginPage />}
         />
         <Route
           path="/register"
-          element={
-            <PlaceholderPage
-              eyebrow="Authentication"
-              title="Register page coming next."
-              description="We’ll build this with validation, API calls, and clean error states so you can understand the full auth flow."
-            />
-          }
+          element={<RegisterPage />}
         />
-        <Route
-          path="/dashboard"
-          element={
-            <PlaceholderPage
-              eyebrow="Workspace"
-              title="Dashboard page coming next."
-              description="This is where your saved resumes, job descriptions, and recent analyses will eventually live."
-            />
-          }
-        />
+        <Route path="/dashboard" element={<DashboardPage />} />
       </Routes>
     </div>
   )
