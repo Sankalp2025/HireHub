@@ -131,6 +131,25 @@ Why this matters:
 - the app now verifies the user with the backend instead of trusting only browser storage
 - this is the base for protected routes and private data screens
 
+### Step 7: Resume workspace started
+
+Completed:
+- added a `/resumes` route
+- created a protected-feeling resumes page
+- connected the page to `GET /resumes`
+- connected the create form to `POST /resumes`
+- added loading, empty, success, and error states
+- added a resume preview area for selected items
+
+Key files:
+- `frontend/src/pages/ResumesPage.tsx`
+- `frontend/src/lib/api.ts`
+- `frontend/src/App.tsx`
+
+Why this matters:
+- this is the first real CRUD-style page in the app
+- it reuses the auth/token work and starts the core product workflow
+
 ## Current File Structure
 
 ```text
@@ -144,6 +163,7 @@ frontend/
       auth.ts
     pages/
       LoginPage.tsx
+      ResumesPage.tsx
       RegisterPage.tsx
     App.tsx
     App.css
@@ -262,7 +282,7 @@ Run that from inside the `frontend/` folder.
 Planned next steps:
 - create shared auth state across the app
 - protect dashboard routes
-- build resume CRUD pages
+- extend resume CRUD with edit and delete
 - build job description CRUD pages
 - build analysis creation and results pages
 

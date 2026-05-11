@@ -11,6 +11,16 @@ export type ApiResponse<T> = {
   error: ApiErrorShape | null
 }
 
+export type PaginatedResponse<T> = {
+  items: T[]
+  total: number
+  page: number
+  per_page: number
+  total_pages: number
+  has_next: boolean
+  has_prev: boolean
+}
+
 export const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:8000/api/v1',
   headers: {

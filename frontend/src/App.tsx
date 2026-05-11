@@ -5,6 +5,7 @@ import { clearAuthTokens, isLoggedIn } from './lib/auth'
 import { api, getApiErrorMessage, type ApiResponse } from './lib/api'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+import ResumesPage from './pages/ResumesPage'
 
 type CurrentUser = {
   id: string
@@ -223,6 +224,7 @@ function AppShell() {
           <NavLink to="/login">Login</NavLink>
           <NavLink to="/register">Register</NavLink>
           <NavLink to="/dashboard">Dashboard</NavLink>
+          <NavLink to="/resumes">Resumes</NavLink>
         </nav>
       </header>
 
@@ -237,6 +239,7 @@ function AppShell() {
           element={<RegisterPage />}
         />
         <Route path="/dashboard" element={<DashboardPage />} />
+        <Route path="/resumes" element={<ResumesPage />} />
       </Routes>
     </div>
   )
