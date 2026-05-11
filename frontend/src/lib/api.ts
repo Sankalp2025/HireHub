@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { getAccessToken } from './auth'
 
 export type ApiErrorShape = {
   code: string
@@ -15,6 +16,16 @@ export const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+})
+
+api.interceptors.request.use((config) => {
+  const accessToken = getAccessToken()
+
+  if (accessToken) {
+    config.headers.Authorization = `Bearer ${accessToken}`
+  }
+
+  return config
 })
 
 export function getApiErrorMessage(error: unknown, fallbackMessage: string) {

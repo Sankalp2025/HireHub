@@ -1,8 +1,17 @@
+import { useEffect, useState } from 'react'
 import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
 import './App.css'
-import { isLoggedIn } from './lib/auth'
+import { clearAuthTokens, isLoggedIn } from './lib/auth'
+import { api, getApiErrorMessage, type ApiResponse } from './lib/api'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
+
+type CurrentUser = {
+  id: string
+  email: string
+  full_name: string
+  created_at: string
+}
 
 function HomePage() {
   const features = [
@@ -82,17 +91,116 @@ function HomePage() {
 
 function DashboardPage() {
   const loggedIn = isLoggedIn()
+  const [user, setUser] = useState<CurrentUser | null>(null)
+  const [errorMessage, setErrorMessage] = useState('')
+  const [isLoading, setIsLoading] = useState(loggedIn)
+
+  useEffect(() => {
+    if (!loggedIn) {
+      setIsLoading(false)
+      setUser(null)
+      return
+    }
+
+    let isMounted = true
+
+    async function loadCurrentUser() {
+      try {
+        setIsLoading(true)
+        setErrorMessage('')
+
+        const response = await api.get<ApiResponse<CurrentUser>>('/auth/me')
+
+        if (!isMounted) {
+          return
+        }
+
+        if (!response.data.data) {
+          setErrorMessage('We could not load your account details.')
+          setUser(null)
+          return
+        }
+
+        setUser(response.data.data)
+      } catch (error) {
+        if (!isMounted) {
+          return
+        }
+
+        clearAuthTokens()
+        setUser(null)
+        setErrorMessage(
+          getApiErrorMessage(
+            error,
+            'Your session could not be verified. Please log in again.',
+          ),
+        )
+      } finally {
+        if (isMounted) {
+          setIsLoading(false)
+        }
+      }
+    }
+
+    void loadCurrentUser()
+
+    return () => {
+      isMounted = false
+    }
+  }, [loggedIn])
 
   return (
     <main className="page">
-      <section className="placeholder-panel">
+      <section className="dashboard-panel">
         <p className="eyebrow">Workspace</p>
-        <h1>{loggedIn ? 'You are signed in.' : 'Dashboard page coming next.'}</h1>
+        <h1>
+          {!loggedIn
+            ? 'Please log in to access your dashboard.'
+            : isLoading
+              ? 'Checking your session...'
+              : user
+                ? `Welcome back, ${user.full_name}.`
+                : 'Your session needs attention.'}
+        </h1>
         <p className="hero-text">
-          {loggedIn
-            ? 'Your tokens are stored in the browser, which means the login flow is working. Next we’ll use that session to fetch the current user and protect private pages.'
-            : 'This route will become the authenticated workspace for resumes, job descriptions, and analysis history.'}
+          {!loggedIn
+            ? 'The dashboard is a private area. Once you log in, we can fetch your real account data and later show resumes, job descriptions, and analysis history here.'
+            : isLoading
+              ? 'The frontend is using your saved access token to ask the backend who the current user is.'
+              : user
+                ? 'Your session is now being validated with the backend, not just the browser. This is the foundation for protected pages and authenticated data fetching.'
+                : 'The frontend could not confirm your account with the backend. Logging in again should restore access.'}
         </p>
+
+        {errorMessage ? (
+          <p className="form-message form-message-error dashboard-message" role="alert">
+            {errorMessage}
+          </p>
+        ) : null}
+
+        {user ? (
+          <div className="dashboard-grid">
+            <article className="dashboard-card">
+              <p className="dashboard-card-label">Authenticated user</p>
+              <h2>{user.full_name}</h2>
+              <p className="dashboard-card-value">{user.email}</p>
+            </article>
+
+            <article className="dashboard-card">
+              <p className="dashboard-card-label">Account status</p>
+              <h2>Active session</h2>
+              <p className="dashboard-card-value">Access token accepted by backend</p>
+            </article>
+
+            <article className="dashboard-card">
+              <p className="dashboard-card-label">Next frontend step</p>
+              <h2>Protected workspace</h2>
+              <p className="dashboard-card-value">
+                Next we’ll turn this area into resume, job description, and analysis pages.
+              </p>
+            </article>
+          </div>
+        ) : null}
       </section>
     </main>
   )

@@ -115,6 +115,22 @@ Key files:
 Why this matters:
 - this is the start of real session handling in the frontend
 
+### Step 6: Dashboard connected to `GET /auth/me`
+
+Completed:
+- attached the saved access token to frontend API requests
+- connected the dashboard to `GET /auth/me`
+- added loading, success, and session-error states
+- showed real authenticated user information on the dashboard
+
+Key files:
+- `frontend/src/App.tsx`
+- `frontend/src/lib/api.ts`
+
+Why this matters:
+- the app now verifies the user with the backend instead of trusting only browser storage
+- this is the base for protected routes and private data screens
+
 ## Current File Structure
 
 ```text
@@ -244,8 +260,6 @@ Run that from inside the `frontend/` folder.
 ## What To Build Next
 
 Planned next steps:
-- show the logged-in state on the dashboard
-- add `GET /auth/me` support
 - create shared auth state across the app
 - protect dashboard routes
 - build resume CRUD pages
