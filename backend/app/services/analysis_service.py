@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -11,6 +12,7 @@ from app.schemas.analysis import AnalyzeRequest
 from app.services.skill_extractor import (
     COSINE_SCORE_WEIGHT,
     KEYWORD_SCORE_WEIGHT,
+    SkillMatchResult,
     compare_resume_to_jd,
 )
 
@@ -25,18 +27,102 @@ class AnalysisResourceNotFoundError(LookupError):
     pass
 
 
-def _generate_suggestions(resume_text: str, missing_skills: list[str]) -> list[str]:
+def _generate_suggestions(
+    resume_text: str,
+    match_result: SkillMatchResult,
+) -> list[str]:
     suggestions: list[str] = []
+    hard_skills = match_result.missing_by_category.get("hard_skill", [])
+    soft_skills = match_result.missing_by_category.get("soft_skill", [])
+    domain_terms = match_result.missing_by_category.get("domain_term", [])
+    keywords = match_result.missing_by_category.get("keyword", [])
+    term_frequency = match_result.missing_term_frequency
 
-    if missing_skills:
-        top_missing = ", ".join(missing_skills[:5])
-        suggestions.append(f"Add evidence of these skills if you have them: {top_missing}.")
+    if match_result.final_score < Decimal("40"):
+        suggestions.append(
+            "This is a low-alignment match; focus first on the core missing hard skills "
+            "before fine-tuning wording."
+        )
+    elif match_result.final_score < Decimal("70"):
+        suggestions.append(
+            "This is a partial match; strengthen the most relevant missing skills and "
+            "domain terms to improve alignment."
+        )
+    else:
+        suggestions.append(
+            "This is a strong match; refine the resume language around the remaining gaps."
+        )
+
+    repeated_hard_skills = [
+        skill for skill in hard_skills if term_frequency.get(skill, 1) > 1
+    ]
+    if repeated_hard_skills:
+        repeated = ", ".join(
+            f"{skill} ({term_frequency[skill]} mentions)" for skill in repeated_hard_skills[:3]
+        )
+        suggestions.append(
+            "Prioritize these repeated role-specific gaps if you have the experience: "
+            + repeated
+            + "."
+        )
+
+    if hard_skills:
+        top_hard_skills = [
+            skill for skill in hard_skills if skill not in set(repeated_hard_skills[:3])
+        ] or hard_skills
+        suggestions.append(
+            "Add evidence of these role-specific skills if you have them: "
+            + ", ".join(top_hard_skills[:5])
+            + "."
+        )
+
+    if domain_terms:
+        suggestions.append(
+            "Highlight relevant domain experience for: "
+            + ", ".join(domain_terms[:5])
+            + "."
+        )
+
+    if soft_skills:
+        suggestions.append(
+            "Show these soft skills through specific examples instead of listing them directly: "
+            + ", ".join(soft_skills[:3])
+            + "."
+        )
+
+    if not hard_skills and not domain_terms and not soft_skills and keywords:
+        suggestions.append(
+            "Consider aligning your resume language with these JD terms: "
+            + ", ".join(keywords[:5])
+            + "."
+        )
+
+    if match_result.missing and len(suggestions) == 1:
+        suggestions.append(
+            "Add evidence of these skills if you have them: "
+            + ", ".join(match_result.missing[:5])
+            + "."
+        )
 
     if not re.search(r"\b\d+[%+]?\b", resume_text):
         suggestions.append("Use more quantified bullet points to show measurable impact.")
 
     suggestions.append("Tailor your summary and experience bullets to the target job description.")
     return suggestions
+
+
+def _serialize_category_breakdown(
+    category_breakdown: dict[str, dict[str, int | Decimal]],
+) -> dict[str, dict[str, int | str]]:
+    return {
+        category: {
+            "matched": stats["matched"],
+            "missing": stats["missing"],
+            "total": stats["total"],
+            "score": str(stats["score"]),
+        }
+        for category, stats in category_breakdown.items()
+    }
 
 
 # with validation to ensure valid input
@@ -107,8 +193,11 @@ async def create_analysis(
             "keyword_score": str(KEYWORD_SCORE_WEIGHT),
             "cosine_similarity_score": str(COSINE_SCORE_WEIGHT),
         },
+        "missing_by_category": match_result.missing_by_category,
+        "category_breakdown": _serialize_category_breakdown(match_result.category_breakdown),
+        "missing_term_frequency": match_result.missing_term_frequency,
     }
-    suggestions = _generate_suggestions(resume_text, match_result.missing)
+    suggestions = _generate_suggestions(resume_text, match_result)
 
     analysis = AnalysisResult(
         user_id=user_id,

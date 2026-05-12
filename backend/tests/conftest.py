@@ -33,6 +33,7 @@ os.environ.setdefault("BACKEND_CORS_ORIGINS", '["http://localhost:5173"]')
 
 from app.database import get_db  # noqa: E402
 from app.main import app  # noqa: E402
+from tests.factories import user_payload  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -79,8 +80,8 @@ TABLES_IN_FK_ORDER = [
 
 async def _truncate_test_tables() -> None:
     async with test_engine.connect() as conn:
-        for table in TABLES_IN_FK_ORDER:
-            await conn.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
+        table_names = ", ".join(TABLES_IN_FK_ORDER)
+        await conn.execute(text(f"TRUNCATE TABLE {table_names} RESTART IDENTITY CASCADE"))
         await conn.commit()
 
 
@@ -103,7 +104,11 @@ app.dependency_overrides[get_db] = _override_get_db
 
 
 @pytest.fixture(autouse=True)
-async def _truncate_tables():
+async def _truncate_tables(request: pytest.FixtureRequest):
+    if "client" not in request.fixturenames:
+        yield
+        return
+
     await _truncate_test_tables()
     yield
     await _truncate_test_tables()
@@ -125,7 +130,7 @@ async def register_user(
 ) -> dict:
     resp = await client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": password, "full_name": full_name},
+        json=user_payload(email=email, password=password, full_name=full_name),
     )
     assert resp.status_code == 201
     return resp.json()["data"]

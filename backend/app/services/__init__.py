@@ -31,7 +31,11 @@ from app.services.resume_service import (
     list_resumes,
     update_resume,
 )
-from app.services.skill_extractor import SkillMatchResult, compare_resume_to_jd
+from app.services.skill_extractor import (
+    SkillCandidate,
+    SkillMatchResult,
+    compare_resume_to_jd,
+)
 
 __all__ = [
     "AnalysisInputError",
@@ -54,6 +58,7 @@ __all__ = [
     "register_user",
     "revoke_refresh_token",
     "rotate_refresh_token",
+    "SkillCandidate",
     "SkillMatchResult",
     "compare_resume_to_jd",
     "update_job_description",

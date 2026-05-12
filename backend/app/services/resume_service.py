@@ -6,6 +6,28 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.resume import Resume
 from app.schemas.resume import ResumeCreateRequest, ResumeUpdateRequest
+from app.utils.pdf import extract_text_from_pdf
+
+
+async def create_resume_from_pdf(
+    db: AsyncSession,
+    user_id: UUID,
+    title: str,
+    pdf_bytes: bytes,
+) -> Resume:
+    text = extract_text_from_pdf(pdf_bytes)
+
+    if len(text) < 50:
+        raise ValueError(
+            "Could not extract sufficient text from the PDF. "
+            "The file may be a scanned image or contain no selectable text. "
+            "Minimum 50 characters required."
+        )
+    if len(text) > 50000:
+        raise ValueError("Extracted text exceeds the maximum length of 50,000 characters.")
+
+    request = ResumeCreateRequest(title=title, content=text)
+    return await create_resume(db, user_id, request)
 
 
 async def create_resume(
