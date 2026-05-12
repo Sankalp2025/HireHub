@@ -108,6 +108,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Create CI env file
+        run: cp .env.example .env
+
       - name: Start stack
         run: docker compose up --build -d
 
