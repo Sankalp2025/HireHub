@@ -37,13 +37,15 @@ async def drop_database(admin_url: str, database_name: str) -> None:
 
 
 def main() -> None:
-    base_url = make_url(os.environ["TEST_DATABASE_URL"])
+    database_url = os.environ.get("TEST_DATABASE_URL", os.environ["DATABASE_URL"])
+    base_url = make_url(database_url)
     temp_db = f"hirehub_migration_test_{uuid.uuid4().hex[:8]}"
     admin_url = base_url.render_as_string(hide_password=False)
 
     asyncio.run(create_database(admin_url, temp_db))
     try:
         temp_url = base_url.set(database=temp_db).render_as_string(hide_password=False)
+        os.environ["DATABASE_URL"] = temp_url
         backend_dir = Path(__file__).resolve().parents[1]
         cfg = Config(str(backend_dir / "alembic.ini"))
         cfg.set_main_option("sqlalchemy.url", temp_url)
