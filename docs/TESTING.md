@@ -67,11 +67,13 @@ A healthy run should report all tests passing across:
 - health endpoint envelope
 - registration and login
 - Swagger token endpoint
-- refresh-token rotation and logout
+- refresh-token rotation, invalid-token handling, expiration, inactive-user handling, concurrency, and logout
 - resume CRUD and user isolation
 - job description CRUD, nullable field clearing, and user isolation
-- analysis creation, pagination, validation, and user isolation
-- skill extractor scoring behavior
+- analysis creation, pagination, validation, snapshots, and user isolation
+- PDF resume upload and text extraction
+- Alembic migration health
+- skill extractor scoring, category grouping, frequency ranking, and property-based score bounds
 
 Run linting separately:
 
@@ -88,9 +90,8 @@ The CI database is `hirehub_test`, which satisfies the test harness guardrail.
 
 ## Good Next Tests To Add
 
-- expired refresh tokens fail
-- refresh tokens for inactive users fail
-- concurrent refresh attempts cannot produce two valid replacement tokens
-- pagination edge cases for empty lists and out-of-range pages
 - validation response envelopes for every router
 - deletion side effects, especially analyses whose source resume or job description is later soft-deleted
+- CORS behavior for the frontend origin
+- refresh-token cleanup behavior for old revoked or expired tokens
+- analysis scoring regression tests using realistic resume/JD fixtures

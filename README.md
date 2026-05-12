@@ -14,14 +14,15 @@ Implemented so far:
 - Refresh token rotation and logout
 - Swagger-compatible OAuth2 token endpoint
 - Protected resume CRUD endpoints
+- Protected PDF resume upload endpoint
 - Protected job description CRUD endpoints
-- Analysis creation and history endpoints with TF-IDF + keyword scoring
+- Analysis creation and history endpoints with category-aware TF-IDF + keyword scoring
 - Snapshot-based analysis persistence
 - Paginated list endpoints with configurable page size
 - Rate limiting on auth endpoints (10/minute per IP)
 - Consistent API error envelope across all endpoints
 - CORS middleware for frontend integration
-- 42-test integration and unit test suite
+- 89-test integration, unit, property, migration, and smoke test suite
 - Ruff linting, pre-commit hooks, and GitHub Actions CI
 
 Current backend routes:
@@ -32,6 +33,7 @@ Current backend routes:
 - `POST /api/v1/auth/logout`
 - `GET /api/v1/auth/me`
 - `POST /api/v1/resumes`
+- `POST /api/v1/resumes/upload`
 - `GET /api/v1/resumes`
 - `GET /api/v1/resumes/{id}`
 - `PATCH /api/v1/resumes/{id}`
@@ -59,6 +61,7 @@ Backend:
 - pwdlib / Argon2
 - SlowAPI (rate limiting)
 - scikit-learn (TF-IDF analysis)
+- PyMuPDF (PDF resume text extraction)
 
 Tooling:
 - Ruff (linting and formatting)
@@ -129,6 +132,12 @@ Open the interactive API docs (Swagger UI supports OAuth2 login via the Authoriz
 http://localhost:8000/docs
 ```
 
+The frontend-facing API contract is summarized in:
+
+```text
+docs/API.md
+```
+
 Stop the app:
 
 ```bash
@@ -159,6 +168,8 @@ The test suite requires a running PostgreSQL instance on `localhost:5432`. Start
 docker compose up -d db
 ```
 
+The full suite currently collects 89 tests. Normal local and CI test runs exclude the smoke test unless `RUN_SMOKE_TESTS=1` is set.
+
 ## Linting
 
 ```bash
@@ -179,8 +190,9 @@ The analysis pipeline uses a weighted combination of keyword matching and TF-IDF
 
 It currently:
 - resolves resume and JD input from saved IDs or raw text
-- normalizes keywords using regex and lowercase matching with stopword filtering
-- computes matched and missing keywords
+- normalizes terms using curated skill phrases, known skill aliases, regex cleanup, and stopword filtering
+- groups missing terms by category such as hard skills, soft skills, domain terms, and fallback keywords
+- ranks missing terms by job-description frequency
 - calculates TF-IDF cosine similarity between resume and JD text
 - produces a weighted final score with score breakdown in the response
 - generates rule-based suggestions

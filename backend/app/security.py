@@ -23,8 +23,15 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
         return False
 
 
-def create_access_token(subject: str) -> str:
-    expires_at = datetime.now(UTC) + timedelta(minutes=settings.access_token_expire_minutes)
+def create_access_token(
+    subject: str,
+    expires_delta: timedelta | None = None,
+) -> str:
+    expires_at = datetime.now(UTC) + (
+        expires_delta
+        if expires_delta is not None
+        else timedelta(minutes=settings.access_token_expire_minutes)
+    )
     payload = {
         "sub": subject,
         "exp": expires_at,

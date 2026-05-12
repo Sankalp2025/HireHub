@@ -80,8 +80,8 @@ TABLES_IN_FK_ORDER = [
 
 async def _truncate_test_tables() -> None:
     async with test_engine.connect() as conn:
-        for table in TABLES_IN_FK_ORDER:
-            await conn.execute(text(f"TRUNCATE TABLE {table} CASCADE"))
+        table_names = ", ".join(TABLES_IN_FK_ORDER)
+        await conn.execute(text(f"TRUNCATE TABLE {table_names} RESTART IDENTITY CASCADE"))
         await conn.commit()
 
 
@@ -104,7 +104,11 @@ app.dependency_overrides[get_db] = _override_get_db
 
 
 @pytest.fixture(autouse=True)
-async def _truncate_tables():
+async def _truncate_tables(request: pytest.FixtureRequest):
+    if "client" not in request.fixturenames:
+        yield
+        return
+
     await _truncate_test_tables()
     yield
     await _truncate_test_tables()

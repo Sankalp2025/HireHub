@@ -65,14 +65,14 @@ async def upload_resume_endpoint(
 ) -> APIResponse[ResumeResponse]:
     if file.content_type != "application/pdf":
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="Only PDF files are accepted.",
         )
 
     pdf_bytes = await file.read()
     if len(pdf_bytes) > MAX_PDF_SIZE_BYTES:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail="File size exceeds the maximum of 5 MB.",
         )
 
@@ -80,7 +80,7 @@ async def upload_resume_endpoint(
         resume = await create_resume_from_pdf(db, current_user.id, title, pdf_bytes)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(exc),
         ) from exc
 

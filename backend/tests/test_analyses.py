@@ -91,6 +91,11 @@ async def test_analysis_response_fields(client: AsyncClient):
     assert {"matched", "missing", "total", "score"} <= set(
         ko["category_breakdown"]["hard_skill"]
     )
+    assert "missing_term_frequency" in ko
+    assert ko["missing_term_frequency"]["kubernetes"] == 3
+    assert ko["missing_term_frequency"]["ci/cd"] == 3
+    assert any("low-alignment match" in suggestion for suggestion in data["suggestions"])
+    assert any("3 mentions" in suggestion for suggestion in data["suggestions"])
 
 
 async def test_list_analyses_pagination(client: AsyncClient):

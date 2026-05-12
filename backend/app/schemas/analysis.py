@@ -47,6 +47,7 @@ class KeywordOverlapResponse(BaseModel):
     score_weights: ScoreWeightsResponse | None = None
     missing_by_category: dict[str, list[str]] | None = None
     category_breakdown: dict[str, CategoryBreakdownResponse] | None = None
+    missing_term_frequency: dict[str, int] | None = None
 
 
 class AnalysisResultResponse(BaseModel):
