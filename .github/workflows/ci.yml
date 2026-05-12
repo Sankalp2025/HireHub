@@ -114,6 +114,20 @@ jobs:
       - name: Start stack
         run: docker compose up --build -d
 
+      - name: Wait for backend to be ready
+        run: |
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8000/api/v1/health > /dev/null 2>&1; then
+              echo "Backend is ready"
+              exit 0
+            fi
+            echo "Waiting for backend... ($i/30)"
+            sleep 2
+          done
+          echo "Backend never became ready"
+          docker compose logs backend
+          exit 1
+
       - name: Smoke test
         run: >-
           docker compose exec -T
