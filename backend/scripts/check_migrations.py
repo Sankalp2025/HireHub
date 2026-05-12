@@ -37,7 +37,7 @@ async def drop_database(admin_url: str, database_name: str) -> None:
 
 
 def main() -> None:
-    database_url = os.environ.get("TEST_DATABASE_URL", os.environ["DATABASE_URL"])
+    database_url = os.environ.get("TEST_DATABASE_URL") or os.environ["DATABASE_URL"]
     base_url = make_url(database_url)
     temp_db = f"hirehub_migration_test_{uuid.uuid4().hex[:8]}"
     admin_url = base_url.render_as_string(hide_password=False)
