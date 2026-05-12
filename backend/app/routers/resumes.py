@@ -1,7 +1,17 @@
 import math
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db
@@ -15,6 +25,7 @@ from app.schemas.resume import (
 )
 from app.services.resume_service import (
     create_resume,
+    create_resume_from_pdf,
     delete_resume,
     get_resume_by_id,
     list_resumes,
@@ -35,6 +46,44 @@ async def create_resume_endpoint(
     current_user: User = Depends(get_current_user),
 ) -> APIResponse[ResumeResponse]:
     resume = await create_resume(db, current_user.id, request)
+    return APIResponse(data=ResumeResponse.model_validate(resume), error=None)
+
+
+MAX_PDF_SIZE_BYTES = 5 * 1024 * 1024
+
+
+@router.post(
+    "/upload",
+    response_model=APIResponse[ResumeResponse],
+    status_code=status.HTTP_201_CREATED,
+)
+async def upload_resume_endpoint(
+    file: UploadFile = File(...),
+    title: str = Form(..., min_length=1, max_length=200),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> APIResponse[ResumeResponse]:
+    if file.content_type != "application/pdf":
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Only PDF files are accepted.",
+        )
+
+    pdf_bytes = await file.read()
+    if len(pdf_bytes) > MAX_PDF_SIZE_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="File size exceeds the maximum of 5 MB.",
+        )
+
+    try:
+        resume = await create_resume_from_pdf(db, current_user.id, title, pdf_bytes)
+    except ValueError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=str(exc),
+        ) from exc
+
     return APIResponse(data=ResumeResponse.model_validate(resume), error=None)
 
 

@@ -7,3 +7,7 @@ __pycache__/
 venv/
 node_modules/
 dist/
+
+.claude/
+.hypothesis/
+backend/.hypothesis/

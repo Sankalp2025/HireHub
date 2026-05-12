@@ -33,6 +33,7 @@ os.environ.setdefault("BACKEND_CORS_ORIGINS", '["http://localhost:5173"]')
 
 from app.database import get_db  # noqa: E402
 from app.main import app  # noqa: E402
+from tests.factories import user_payload  # noqa: E402
 
 BACKEND_DIR = Path(__file__).resolve().parents[1]
 
@@ -125,7 +126,7 @@ async def register_user(
 ) -> dict:
     resp = await client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": password, "full_name": full_name},
+        json=user_payload(email=email, password=password, full_name=full_name),
     )
     assert resp.status_code == 201
     return resp.json()["data"]
