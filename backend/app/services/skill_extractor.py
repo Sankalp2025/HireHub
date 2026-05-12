@@ -5,10 +5,16 @@ from decimal import ROUND_HALF_UP, Decimal
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 
-from app.services.skill_catalog import load_skill_phrases
+from app.services.skill_catalog import load_known_skills, load_skill_phrases
 
 KEYWORD_SCORE_WEIGHT = Decimal("0.65")
 COSINE_SCORE_WEIGHT = Decimal("0.35")
+CATEGORY_MATCH_WEIGHTS: dict[str, Decimal] = {
+    "hard_skill": Decimal("1.50"),
+    "domain_term": Decimal("1.30"),
+    "soft_skill": Decimal("1.00"),
+    "keyword": Decimal("0.60"),
+}
 
 
 @dataclass(frozen=True)
@@ -29,6 +35,7 @@ class SkillMatchResult:
     cosine_similarity_score: Decimal
     final_score: Decimal
     missing_by_category: dict[str, list[str]]
+    category_breakdown: dict[str, dict[str, int | Decimal]]
 
 
 _STOP_WORDS: frozenset[str] = frozenset(
@@ -131,19 +138,43 @@ def extract_skill_phrases(text: str) -> set[SkillCandidate]:
     return candidates
 
 
+def extract_known_skills(text: str) -> set[SkillCandidate]:
+    normalized_text = normalize_skill_text(text)
+    candidates: set[SkillCandidate] = set()
+
+    for known_skill in load_known_skills():
+        skill_options = (known_skill.term, *known_skill.aliases)
+
+        for option in skill_options:
+            normalized_option = normalize_skill_text(option)
+            if _contains_phrase(normalized_text, normalized_option):
+                candidates.add(
+                    SkillCandidate(
+                        raw_text=option,
+                        normalized_text=normalize_skill_text(known_skill.term),
+                        source="known_skill",
+                        category=known_skill.category,
+                    )
+                )
+                break
+
+    return candidates
+
+
 def extract_skill_candidates(text: str) -> set[SkillCandidate]:
     phrase_candidates = extract_skill_phrases(text)
-    phrase_component_terms = {
+    known_skill_candidates = extract_known_skills(text)
+    curated_component_terms = {
         word
-        for candidate in phrase_candidates
-        for word in normalize_keywords(candidate.normalized_text)
+        for candidate in phrase_candidates | known_skill_candidates
+        for word in normalize_keywords(f"{candidate.raw_text} {candidate.normalized_text}")
     }
     keyword_candidates = {
         make_skill_candidate(keyword, "keyword")
         for keyword in normalize_keywords(text)
-        if keyword not in phrase_component_terms
+        if keyword not in curated_component_terms
     }
-    return keyword_candidates | phrase_candidates
+    return keyword_candidates | known_skill_candidates | phrase_candidates
 
 
 def extract_terms(text: str) -> set[str]:
@@ -152,8 +183,13 @@ def extract_terms(text: str) -> set[str]:
 
 def _candidate_map(candidates: set[SkillCandidate]) -> dict[str, SkillCandidate]:
     candidate_map: dict[str, SkillCandidate] = {}
+    source_priority = {
+        "phrase": 0,
+        "known_skill": 1,
+        "keyword": 2,
+    }
 
-    for candidate in sorted(candidates, key=lambda item: item.source == "keyword"):
+    for candidate in sorted(candidates, key=lambda item: source_priority.get(item.source, 3)):
         candidate_map.setdefault(candidate.normalized_text, candidate)
 
     return candidate_map
@@ -172,6 +208,41 @@ def group_missing_by_category(
     return grouped
 
 
+def build_category_breakdown(
+    matched_terms: list[str],
+    missing_terms: list[str],
+    jd_candidates: dict[str, SkillCandidate],
+) -> dict[str, dict[str, int | Decimal]]:
+    breakdown: dict[str, dict[str, int | Decimal]] = {}
+
+    for term in matched_terms:
+        category = jd_candidates[term].category
+        category_stats = breakdown.setdefault(
+            category,
+            {"matched": 0, "missing": 0, "total": 0, "score": Decimal("0.00")},
+        )
+        category_stats["matched"] += 1
+        category_stats["total"] += 1
+
+    for term in missing_terms:
+        category = jd_candidates[term].category
+        category_stats = breakdown.setdefault(
+            category,
+            {"matched": 0, "missing": 0, "total": 0, "score": Decimal("0.00")},
+        )
+        category_stats["missing"] += 1
+        category_stats["total"] += 1
+
+    for category_stats in breakdown.values():
+        total = category_stats["total"]
+        if total == 0:
+            continue
+        score = (Decimal(category_stats["matched"]) / Decimal(total)) * Decimal("100")
+        category_stats["score"] = score.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    return breakdown
+
+
 def calculate_keyword_score(
     matched_count: int,
     total_jd_keywords: int,
@@ -180,6 +251,30 @@ def calculate_keyword_score(
         return Decimal("0.00")
 
     score = (Decimal(matched_count) / Decimal(total_jd_keywords)) * Decimal("100")
+    return score.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+
+def get_candidate_match_weight(candidate: SkillCandidate) -> Decimal:
+    return CATEGORY_MATCH_WEIGHTS.get(candidate.category, CATEGORY_MATCH_WEIGHTS["keyword"])
+
+
+def calculate_weighted_keyword_score(
+    matched_terms: list[str],
+    jd_candidates: dict[str, SkillCandidate],
+) -> Decimal:
+    total_weight = sum(
+        (get_candidate_match_weight(candidate) for candidate in jd_candidates.values()),
+        Decimal("0"),
+    )
+
+    if total_weight == 0:
+        return Decimal("0.00")
+
+    matched_weight = sum(
+        (get_candidate_match_weight(jd_candidates[term]) for term in matched_terms),
+        Decimal("0"),
+    )
+    score = (matched_weight / total_weight) * Decimal("100")
     return score.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
 
 
@@ -216,8 +311,9 @@ def compare_resume_to_jd(resume_text: str, jd_text: str) -> SkillMatchResult:
     matched = sorted(resume_candidates.keys() & jd_candidates.keys())
     missing = sorted(jd_candidates.keys() - resume_candidates.keys())
     missing_by_category = group_missing_by_category(missing, jd_candidates)
+    category_breakdown = build_category_breakdown(matched, missing, jd_candidates)
 
-    keyword_score = calculate_keyword_score(len(matched), len(jd_candidates))
+    keyword_score = calculate_weighted_keyword_score(matched, jd_candidates)
     cosine_score = calculate_cosine_similarity_score(resume_text, jd_text)
     final_score = calculate_final_score(keyword_score, cosine_score)
 
@@ -230,4 +326,5 @@ def compare_resume_to_jd(resume_text: str, jd_text: str) -> SkillMatchResult:
         cosine_similarity_score=cosine_score,
         final_score=final_score,
         missing_by_category=missing_by_category,
+        category_breakdown=category_breakdown,
     )

@@ -1,0 +1,332 @@
+[
+  {
+    "term": "airflow",
+    "category": "hard_skill",
+    "aliases": ["apache airflow"]
+  },
+  {
+    "term": "asana",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "aws",
+    "category": "hard_skill",
+    "aliases": ["amazon web services"]
+  },
+  {
+    "term": "azure",
+    "category": "hard_skill",
+    "aliases": ["microsoft azure"]
+  },
+  {
+    "term": "blackboard",
+    "category": "hard_skill",
+    "aliases": ["blackboard learn"]
+  },
+  {
+    "term": "c#",
+    "category": "hard_skill",
+    "aliases": ["c sharp"]
+  },
+  {
+    "term": "c++",
+    "category": "hard_skill",
+    "aliases": ["cpp"]
+  },
+  {
+    "term": "canvas",
+    "category": "hard_skill",
+    "aliases": ["canvas lms"]
+  },
+  {
+    "term": "cerner",
+    "category": "hard_skill",
+    "aliases": ["oracle cerner"]
+  },
+  {
+    "term": "cpt",
+    "category": "domain_term",
+    "aliases": ["current procedural terminology"]
+  },
+  {
+    "term": "crm",
+    "category": "domain_term",
+    "aliases": ["customer relationship management"]
+  },
+  {
+    "term": "css",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "django",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "docker",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "dotnet",
+    "category": "hard_skill",
+    "aliases": [".net", "asp.net"]
+  },
+  {
+    "term": "epic",
+    "category": "hard_skill",
+    "aliases": ["epic systems"]
+  },
+  {
+    "term": "erp",
+    "category": "domain_term",
+    "aliases": ["enterprise resource planning"]
+  },
+  {
+    "term": "excel",
+    "category": "hard_skill",
+    "aliases": ["microsoft excel"]
+  },
+  {
+    "term": "fastapi",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "figma",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "flask",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "gaap",
+    "category": "domain_term",
+    "aliases": ["generally accepted accounting principles"]
+  },
+  {
+    "term": "gcp",
+    "category": "hard_skill",
+    "aliases": ["google cloud", "google cloud platform"]
+  },
+  {
+    "term": "git",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "github",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "github actions",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "gitlab",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "golang",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "hl7",
+    "category": "domain_term",
+    "aliases": ["health level seven"]
+  },
+  {
+    "term": "html",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "icd-10",
+    "category": "domain_term",
+    "aliases": ["icd10"]
+  },
+  {
+    "term": "ifrs",
+    "category": "domain_term",
+    "aliases": ["international financial reporting standards"]
+  },
+  {
+    "term": "java",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "javascript",
+    "category": "hard_skill",
+    "aliases": ["js"]
+  },
+  {
+    "term": "jenkins",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "jira",
+    "category": "hard_skill",
+    "aliases": ["atlassian jira"]
+  },
+  {
+    "term": "kafka",
+    "category": "hard_skill",
+    "aliases": ["apache kafka"]
+  },
+  {
+    "term": "kubernetes",
+    "category": "hard_skill",
+    "aliases": ["k8s"]
+  },
+  {
+    "term": "linux",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "lms",
+    "category": "domain_term",
+    "aliases": ["learning management system"]
+  },
+  {
+    "term": "mongodb",
+    "category": "hard_skill",
+    "aliases": ["mongo"]
+  },
+  {
+    "term": "moodle",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "mysql",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "netsuite",
+    "category": "hard_skill",
+    "aliases": ["oracle netsuite"]
+  },
+  {
+    "term": "node.js",
+    "category": "hard_skill",
+    "aliases": ["node", "nodejs"]
+  },
+  {
+    "term": "numpy",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "pandas",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "postgresql",
+    "category": "hard_skill",
+    "aliases": ["postgres"]
+  },
+  {
+    "term": "power bi",
+    "category": "hard_skill",
+    "aliases": ["microsoft power bi"]
+  },
+  {
+    "term": "python",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "pytorch",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "quickbooks",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "react",
+    "category": "hard_skill",
+    "aliases": ["react.js", "reactjs"]
+  },
+  {
+    "term": "redis",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "rust",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "salesforce",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "sap",
+    "category": "hard_skill",
+    "aliases": ["sap erp"]
+  },
+  {
+    "term": "scikit-learn",
+    "category": "hard_skill",
+    "aliases": ["sklearn", "scikit learn"]
+  },
+  {
+    "term": "spark",
+    "category": "hard_skill",
+    "aliases": ["apache spark"]
+  },
+  {
+    "term": "spring",
+    "category": "hard_skill",
+    "aliases": ["spring boot"]
+  },
+  {
+    "term": "sql",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "tableau",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "tensorflow",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "terraform",
+    "category": "hard_skill",
+    "aliases": []
+  },
+  {
+    "term": "typescript",
+    "category": "hard_skill",
+    "aliases": ["ts"]
+  },
+  {
+    "term": "workday",
+    "category": "hard_skill",
+    "aliases": []
+  }
+]

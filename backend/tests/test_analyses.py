@@ -86,6 +86,11 @@ async def test_analysis_response_fields(client: AsyncClient):
     assert "score_weights" in ko
     assert "keyword_score" in ko["score_weights"]
     assert "cosine_similarity_score" in ko["score_weights"]
+    assert "category_breakdown" in ko
+    assert "hard_skill" in ko["category_breakdown"]
+    assert {"matched", "missing", "total", "score"} <= set(
+        ko["category_breakdown"]["hard_skill"]
+    )
 
 
 async def test_list_analyses_pagination(client: AsyncClient):

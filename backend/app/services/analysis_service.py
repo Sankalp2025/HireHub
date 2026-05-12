@@ -1,4 +1,5 @@
 import re
+from decimal import Decimal
 from uuid import UUID
 
 from sqlalchemy import func, select
@@ -78,6 +79,20 @@ def _generate_suggestions(
     return suggestions
 
 
+def _serialize_category_breakdown(
+    category_breakdown: dict[str, dict[str, int | Decimal]],
+) -> dict[str, dict[str, int | str]]:
+    return {
+        category: {
+            "matched": stats["matched"],
+            "missing": stats["missing"],
+            "total": stats["total"],
+            "score": str(stats["score"]),
+        }
+        for category, stats in category_breakdown.items()
+    }
+
+
 # with validation to ensure valid input
 async def _get_resume_input(
     db: AsyncSession,
@@ -147,6 +162,7 @@ async def create_analysis(
             "cosine_similarity_score": str(COSINE_SCORE_WEIGHT),
         },
         "missing_by_category": match_result.missing_by_category,
+        "category_breakdown": _serialize_category_breakdown(match_result.category_breakdown),
     }
     suggestions = _generate_suggestions(
         resume_text,

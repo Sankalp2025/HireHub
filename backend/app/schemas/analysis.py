@@ -29,6 +29,13 @@ class ScoreWeightsResponse(BaseModel):
     cosine_similarity_score: Decimal
 
 
+class CategoryBreakdownResponse(BaseModel):
+    matched: int
+    missing: int
+    total: int
+    score: Decimal
+
+
 # the count of matched keywords, and the total number of keywords in the job description
 class KeywordOverlapResponse(BaseModel):
     matched: list[str]
@@ -39,6 +46,7 @@ class KeywordOverlapResponse(BaseModel):
     cosine_similarity_score: Decimal | None = None
     score_weights: ScoreWeightsResponse | None = None
     missing_by_category: dict[str, list[str]] | None = None
+    category_breakdown: dict[str, CategoryBreakdownResponse] | None = None
 
 
 class AnalysisResultResponse(BaseModel):

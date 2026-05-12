@@ -6,7 +6,9 @@ from hypothesis import strategies as st
 from app.services.skill_extractor import (
     calculate_final_score,
     calculate_keyword_score,
+    calculate_weighted_keyword_score,
     compare_resume_to_jd,
+    extract_skill_candidates,
     extract_terms,
     normalize_keywords,
 )
@@ -45,6 +47,32 @@ def test_curated_phrase_aliases_normalize_to_canonical_terms():
     assert "electronic health records" in terms
     assert "individualized education plans" in terms
     assert "profit and loss analysis" in terms
+
+
+def test_known_skill_aliases_normalize_to_canonical_terms():
+    terms = extract_terms(
+        "Built services with Postgres, Microsoft Excel reports, Google Cloud, "
+        "K8s, and React.js."
+    )
+
+    assert "postgresql" in terms
+    assert "excel" in terms
+    assert "gcp" in terms
+    assert "kubernetes" in terms
+    assert "react" in terms
+
+
+def test_known_skills_are_categorized_before_fallback_keywords():
+    candidates = {
+        candidate.normalized_text: candidate
+        for candidate in extract_skill_candidates("Python, FastAPI, Docker, and GAAP")
+    }
+
+    assert candidates["python"].source == "known_skill"
+    assert candidates["python"].category == "hard_skill"
+    assert candidates["fastapi"].source == "known_skill"
+    assert candidates["docker"].category == "hard_skill"
+    assert candidates["gaap"].category == "domain_term"
 
 
 def test_phrase_matches_are_grouped_by_curated_category():
@@ -86,6 +114,55 @@ def test_normalize_keywords_filters_stopwords():
 
 def test_calculate_keyword_score_zero_total():
     assert calculate_keyword_score(0, 0) == Decimal("0.00")
+
+
+def test_calculate_weighted_keyword_score_zero_total():
+    assert calculate_weighted_keyword_score([], {}) == Decimal("0.00")
+
+
+def test_category_weighted_scoring_prioritizes_hard_skills():
+    jd = "Python Docker teamwork curiosity"
+    hard_skill_resume = "Python Docker"
+    generic_resume = "teamwork curiosity"
+
+    hard_skill_result = compare_resume_to_jd(hard_skill_resume, jd)
+    generic_result = compare_resume_to_jd(generic_resume, jd)
+
+    assert hard_skill_result.matched_count == generic_result.matched_count
+    assert hard_skill_result.keyword_score > generic_result.keyword_score
+    assert hard_skill_result.final_score > generic_result.final_score
+
+
+def test_category_breakdown_summarizes_jd_match_by_category():
+    result = compare_resume_to_jd(
+        "Python Docker teamwork",
+        "Python Docker teamwork curiosity financial reporting",
+    )
+
+    assert result.category_breakdown["hard_skill"] == {
+        "matched": 2,
+        "missing": 0,
+        "total": 2,
+        "score": Decimal("100.00"),
+    }
+    assert result.category_breakdown["soft_skill"] == {
+        "matched": 1,
+        "missing": 0,
+        "total": 1,
+        "score": Decimal("100.00"),
+    }
+    assert result.category_breakdown["domain_term"] == {
+        "matched": 0,
+        "missing": 1,
+        "total": 1,
+        "score": Decimal("0.00"),
+    }
+    assert result.category_breakdown["keyword"] == {
+        "matched": 0,
+        "missing": 1,
+        "total": 1,
+        "score": Decimal("0.00"),
+    }
 
 
 def test_calculate_final_score_weighting():
