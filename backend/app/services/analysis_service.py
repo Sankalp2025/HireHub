@@ -193,6 +193,7 @@ async def create_analysis(
             "keyword_score": str(KEYWORD_SCORE_WEIGHT),
             "cosine_similarity_score": str(COSINE_SCORE_WEIGHT),
         },
+        "matched_by_category": match_result.matched_by_category,
         "missing_by_category": match_result.missing_by_category,
         "category_breakdown": _serialize_category_breakdown(match_result.category_breakdown),
         "missing_term_frequency": match_result.missing_term_frequency,

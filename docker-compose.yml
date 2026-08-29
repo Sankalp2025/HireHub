@@ -3,13 +3,13 @@ name: hirehub
 services:
   db:
     image: postgres:16-alpine
-    container_name: hirehub_db
+    container_name: ${DB_CONTAINER_NAME:-hirehub_db}
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-hirehub}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-hirehub_dev}
       POSTGRES_DB: ${POSTGRES_DB:-hirehub}
     ports:
-      - "5432:5432"
+      - "${POSTGRES_PORT:-5432}:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -22,13 +22,14 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
-    container_name: hirehub_backend
+    container_name: ${BACKEND_CONTAINER_NAME:-hirehub_backend}
     env_file:
       - .env
     ports:
-      - "8000:8000"
+      - "${BACKEND_PORT:-8000}:8000"
     volumes:
       - ./backend/app:/app/app
+      - ./demo:/app/demo:ro
     depends_on:
       db:
         condition: service_healthy

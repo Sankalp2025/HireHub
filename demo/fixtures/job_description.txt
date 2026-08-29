@@ -1,0 +1,10 @@
+Entry-level Backend Software Engineer
+
+Build reliable Python and FastAPI services and REST API endpoints. Use
+PostgreSQL, SQLAlchemy, Docker, and Git. Write unit testing with pytest, maintain
+database migrations and JWT authentication, and improve CI/CD automation.
+Collaborate in an Agile software engineering team, communicate technical
+tradeoffs clearly, solve problems, and deliver measurable project impact.
+
+The team's current backend stack also uses AWS, Kubernetes, Redis, Terraform,
+cloud deployment, and observability tooling.

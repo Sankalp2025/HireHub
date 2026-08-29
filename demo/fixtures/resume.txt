@@ -1,0 +1,17 @@
+Jordan Lee
+Junior Backend Developer
+
+Backend developer experienced with Python, FastAPI, PostgreSQL, SQLAlchemy,
+Docker, Git, REST API design, and unit testing with pytest. Built reliable
+FastAPI services and REST API endpoints for a job-tracking project with JWT
+authentication, database migrations, validation, and automated CI/CD checks.
+Completed an AWS cloud deployment for the Dockerized service and added Redis
+caching for frequently requested job data. Improved test coverage to 88% and
+reduced repeated database queries by 30% through focused profiling and query
+cleanup.
+
+Collaborated in an Agile software engineering team, reviewed pull requests,
+explained technical tradeoffs clearly, and converted product requirements into
+small deliverable features. Demonstrated collaboration, problem solving, and
+teamwork while delivering measurable project impact and maintainable technical
+documentation.
