@@ -2,6 +2,19 @@
 
 HireHub is a resume and job description analysis platform. Users can register, save resumes, save job descriptions, run a match analysis, and review saved analysis history.
 
+![HireHub backend demo](docs/media/hirehub-demo.gif)
+
+The demo runs the real FastAPI authentication and analysis flow against an
+isolated PostgreSQL database, then presents an explainable resume-job alignment
+score with category coverage, matched terms, skill gaps, and suggestions.
+
+```bash
+make demo
+```
+
+[Watch the MP4 version](docs/media/hirehub-demo.mp4) or read the
+[demo details](demo/README.md).
+
 ## Current Status
 
 The backend MVP is working end-to-end.
@@ -16,13 +29,13 @@ Implemented so far:
 - Protected resume CRUD endpoints
 - Protected PDF resume upload endpoint
 - Protected job description CRUD endpoints
-- Analysis creation and history endpoints with category-aware TF-IDF + keyword scoring
+- Analysis creation and history endpoints with explainable category-weighted scoring
 - Snapshot-based analysis persistence
 - Paginated list endpoints with configurable page size
 - Rate limiting on auth endpoints (10/minute per IP)
 - Consistent API error envelope across all endpoints
 - CORS middleware for frontend integration
-- 89-test integration, unit, property, migration, and smoke test suite
+- Integration, unit, property, migration, and smoke test coverage
 - Ruff linting, pre-commit hooks, and GitHub Actions CI
 
 Current backend routes:
@@ -168,7 +181,7 @@ The test suite requires a running PostgreSQL instance on `localhost:5432`. Start
 docker compose up -d db
 ```
 
-The full suite currently collects 89 tests. Normal local and CI test runs exclude the smoke test unless `RUN_SMOKE_TESTS=1` is set.
+Normal local and CI test runs exclude the smoke test unless `RUN_SMOKE_TESTS=1` is set.
 
 ## Linting
 
@@ -186,15 +199,18 @@ pre-commit install
 
 ## Analysis Approach
 
-The analysis pipeline uses a weighted combination of keyword matching and TF-IDF cosine similarity (65% keyword, 35% cosine) for explainable scoring.
+The analysis pipeline produces an explainable resume-job alignment score from
+category-weighted skill coverage. Hard skills and domain terms carry more weight
+than generic fallback keywords. TF-IDF cosine similarity remains visible as a
+lexical diagnostic, but it does not currently affect the headline score.
 
 It currently:
 - resolves resume and JD input from saved IDs or raw text
 - normalizes terms using curated skill phrases, known skill aliases, regex cleanup, and stopword filtering
 - groups missing terms by category such as hard skills, soft skills, domain terms, and fallback keywords
 - ranks missing terms by job-description frequency
-- calculates TF-IDF cosine similarity between resume and JD text
-- produces a weighted final score with score breakdown in the response
+- calculates TF-IDF cosine similarity as a separate lexical diagnostic
+- produces a category-weighted final score with a transparent breakdown
 - generates rule-based suggestions
 - stores the full analysis result in PostgreSQL
 
