@@ -8,8 +8,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 
 from app.services.skill_catalog import load_known_skills, load_skill_phrases
 
-KEYWORD_SCORE_WEIGHT = Decimal("0.65")
-COSINE_SCORE_WEIGHT = Decimal("0.35")
+# Category-weighted skill coverage is the authoritative explainable score.
+# TF-IDF cosine remains available as a lexical-similarity diagnostic.
+KEYWORD_SCORE_WEIGHT = Decimal("1.00")
+COSINE_SCORE_WEIGHT = Decimal("0.00")
 CATEGORY_MATCH_WEIGHTS: dict[str, Decimal] = {
     "hard_skill": Decimal("1.50"),
     "domain_term": Decimal("1.30"),
@@ -36,6 +38,7 @@ class SkillMatchResult:
     keyword_score: Decimal
     cosine_similarity_score: Decimal
     final_score: Decimal
+    matched_by_category: dict[str, list[str]]
     missing_by_category: dict[str, list[str]]
     category_breakdown: dict[str, dict[str, int | Decimal]]
 
@@ -254,11 +257,7 @@ def group_missing_by_category(
     jd_candidates: dict[str, SkillCandidate],
     term_frequency: dict[str, int] | None = None,
 ) -> dict[str, list[str]]:
-    grouped: dict[str, list[str]] = {}
-
-    for term in missing_terms:
-        category = jd_candidates[term].category
-        grouped.setdefault(category, []).append(term)
+    grouped = group_terms_by_category(missing_terms, jd_candidates)
 
     if term_frequency is not None:
         for category, terms in grouped.items():
@@ -266,6 +265,19 @@ def group_missing_by_category(
                 terms,
                 key=lambda term: (-term_frequency.get(term, 1), term),
             )
+
+    return grouped
+
+
+def group_terms_by_category(
+    terms: list[str],
+    jd_candidates: dict[str, SkillCandidate],
+) -> dict[str, list[str]]:
+    grouped: dict[str, list[str]] = {}
+
+    for term in terms:
+        category = jd_candidates[term].category
+        grouped.setdefault(category, []).append(term)
 
     return grouped
 
@@ -414,6 +426,7 @@ def compare_resume_to_jd(resume_text: str, jd_text: str) -> SkillMatchResult:
         missing_term_frequency,
         key=lambda term: (-missing_term_frequency[term], term),
     )
+    matched_by_category = group_terms_by_category(matched, jd_candidates)
     missing_by_category = group_missing_by_category(
         missing,
         jd_candidates,
@@ -434,6 +447,7 @@ def compare_resume_to_jd(resume_text: str, jd_text: str) -> SkillMatchResult:
         keyword_score=keyword_score,
         cosine_similarity_score=cosine_score,
         final_score=final_score,
+        matched_by_category=matched_by_category,
         missing_by_category=missing_by_category,
         category_breakdown=category_breakdown,
     )

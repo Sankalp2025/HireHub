@@ -307,7 +307,7 @@ Response data:
   "user_id": "uuid",
   "resume_id": "uuid",
   "jd_id": "uuid",
-  "match_score": "72.35",
+  "match_score": "64.29",
   "missing_skills": ["kubernetes", "cloud deployment"],
   "suggestions": [
     "Add evidence of these role-specific skills if you have them: kubernetes, cloud deployment.",
@@ -325,8 +325,11 @@ Response data:
     "keyword_score": "64.29",
     "cosine_similarity_score": "87.31",
     "score_weights": {
-      "keyword_score": "0.65",
-      "cosine_similarity_score": "0.35"
+      "keyword_score": "1.00",
+      "cosine_similarity_score": "0.00"
+    },
+    "matched_by_category": {
+      "hard_skill": ["python", "fastapi", "postgresql"]
     },
     "missing_by_category": {
       "hard_skill": ["kubernetes"],

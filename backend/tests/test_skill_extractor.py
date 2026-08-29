@@ -213,14 +213,23 @@ def test_category_breakdown_summarizes_jd_match_by_category():
         "total": 1,
         "score": Decimal("0.00"),
     }
+    assert result.matched_by_category == {
+        "hard_skill": ["docker", "python"],
+        "soft_skill": ["teamwork"],
+    }
 
 
-def test_calculate_final_score_weighting():
-    score = calculate_final_score(Decimal("100"), Decimal("100"))
-    assert score == Decimal("100.00")
+def test_final_score_uses_category_weighted_keyword_score():
+    score = calculate_final_score(Decimal("72.34"), Decimal("11.11"))
 
-    score = calculate_final_score(Decimal("0"), Decimal("0"))
-    assert score == Decimal("0.00")
+    assert score == Decimal("72.34")
+
+
+def test_cosine_diagnostic_does_not_change_final_score():
+    low_cosine = calculate_final_score(Decimal("68.12"), Decimal("0"))
+    high_cosine = calculate_final_score(Decimal("68.12"), Decimal("100"))
+
+    assert low_cosine == high_cosine == Decimal("68.12")
 
 
 def test_backend_engineer_resume_scores_higher_than_unrelated_resume():
@@ -243,6 +252,8 @@ def test_backend_engineer_resume_scores_higher_than_unrelated_resume():
 
     assert strong.final_score > weak.final_score
     assert strong.final_score >= Decimal("50")
+    assert strong.final_score == strong.keyword_score
+    assert weak.final_score == weak.keyword_score
 
 
 def test_skill_extractor_handles_large_inputs():

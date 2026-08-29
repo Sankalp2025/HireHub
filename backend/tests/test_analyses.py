@@ -86,6 +86,8 @@ async def test_analysis_response_fields(client: AsyncClient):
     assert "score_weights" in ko
     assert "keyword_score" in ko["score_weights"]
     assert "cosine_similarity_score" in ko["score_weights"]
+    assert "matched_by_category" in ko
+    assert "python" in ko["matched_by_category"]["hard_skill"]
     assert "category_breakdown" in ko
     assert "hard_skill" in ko["category_breakdown"]
     assert {"matched", "missing", "total", "score"} <= set(
@@ -94,7 +96,7 @@ async def test_analysis_response_fields(client: AsyncClient):
     assert "missing_term_frequency" in ko
     assert ko["missing_term_frequency"]["kubernetes"] == 3
     assert ko["missing_term_frequency"]["ci/cd"] == 3
-    assert any("low-alignment match" in suggestion for suggestion in data["suggestions"])
+    assert any("partial match" in suggestion for suggestion in data["suggestions"])
     assert any("3 mentions" in suggestion for suggestion in data["suggestions"])
 
 
