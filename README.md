@@ -87,7 +87,7 @@ Infrastructure:
 - Docker Compose
 
 Frontend:
-- React + TypeScript is currently planned, but the frontend stack can still change as long as it consumes the backend API.
+- A React + TypeScript frontend built by a collaborator is in progress on the `frontend` branch and consumes this backend API.
 
 ## Local Setup
 
