@@ -171,6 +171,33 @@
   color: var(--color-heading);
 }
 
+.button-small {
+  font-size: 0.9rem;
+  padding: 0.5rem 1rem;
+}
+
+.button-danger {
+  background: transparent;
+  border: 1px solid rgba(148, 49, 38, 0.4);
+  color: var(--color-accent);
+}
+
+.button-danger:hover {
+  background: rgba(148, 49, 38, 0.08);
+}
+
+.button-danger-solid {
+  background: var(--color-accent);
+  border: 1px solid var(--color-accent);
+  color: #fffdf8;
+}
+
+.button:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
+}
+
 .hero-card {
   background: rgba(255, 253, 248, 0.82);
   border: 1px solid rgba(72, 63, 51, 0.08);
@@ -548,6 +575,7 @@
 }
 
 .resume-list {
+  align-content: start;
   display: grid;
   gap: 0.75rem;
 }
@@ -623,6 +651,32 @@
   font-size: 0.88rem;
   margin: 0;
   white-space: nowrap;
+}
+
+.resume-preview-actions {
+  align-items: center;
+  border-bottom: 1px solid var(--color-border);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  padding: 0.75rem 1.25rem;
+}
+
+.resume-preview-confirm {
+  color: var(--color-body);
+  flex: 1 1 auto;
+  font-size: 0.9rem;
+}
+
+.form-actions {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+.form-actions .form-submit {
+  flex: 1;
+  width: auto;
 }
 
 .resume-preview-body {

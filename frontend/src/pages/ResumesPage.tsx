@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { api, getApiErrorMessage, type ApiResponse, type PaginatedResponse } from '../lib/api'
 
 type Resume = {
@@ -24,8 +24,12 @@ function ResumesPage() {
   const [resumes, setResumes] = useState<Resume[]>([])
   const [formState, setFormState] = useState<ResumeFormState>(initialFormState)
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null)
+  const [editingResumeId, setEditingResumeId] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const titleInputRef = useRef<HTMLInputElement>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -104,11 +108,37 @@ function ResumesPage() {
 
     setIsSubmitting(true)
 
+    const payload = {
+      title: formState.title.trim(),
+      content: formState.content.trim(),
+    }
+
     try {
-      const response = await api.post<ApiResponse<Resume>>('/resumes', {
-        title: formState.title.trim(),
-        content: formState.content.trim(),
-      })
+      if (editingResumeId) {
+        const response = await api.patch<ApiResponse<Resume>>(
+          `/resumes/${editingResumeId}`,
+          payload,
+        )
+
+        const updatedResume = response.data.data
+        if (!updatedResume) {
+          setErrorMessage('The backend did not return the updated resume.')
+          return
+        }
+
+        setResumes((currentResumes) =>
+          currentResumes.map((resume) =>
+            resume.id === updatedResume.id ? updatedResume : resume,
+          ),
+        )
+        setSelectedResumeId(updatedResume.id)
+        setEditingResumeId(null)
+        setFormState(initialFormState)
+        setSuccessMessage('Changes saved.')
+        return
+      }
+
+      const response = await api.post<ApiResponse<Resume>>('/resumes', payload)
 
       const createdResume = response.data.data
       if (!createdResume) {
@@ -119,13 +149,66 @@ function ResumesPage() {
       setResumes((currentResumes) => [createdResume, ...currentResumes])
       setSelectedResumeId(createdResume.id)
       setFormState(initialFormState)
-      setSuccessMessage('Resume saved successfully.')
+      setSuccessMessage('Resume saved.')
     } catch (error) {
       setErrorMessage(
-        getApiErrorMessage(error, 'We could not save your resume. Please try again.'),
+        getApiErrorMessage(
+          error,
+          editingResumeId
+            ? 'We could not save your changes. Please try again.'
+            : 'We could not save your resume. Please try again.',
+        ),
       )
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  function startEditing(resume: Resume) {
+    setErrorMessage('')
+    setSuccessMessage('')
+    setConfirmingDeleteId(null)
+    setEditingResumeId(resume.id)
+    setFormState({ title: resume.title, content: resume.content })
+    titleInputRef.current?.focus()
+  }
+
+  function cancelEditing() {
+    setEditingResumeId(null)
+    setFormState(initialFormState)
+    setErrorMessage('')
+  }
+
+  function selectResume(resumeId: string) {
+    setSelectedResumeId(resumeId)
+    setConfirmingDeleteId(null)
+  }
+
+  async function handleDelete(resumeId: string) {
+    setErrorMessage('')
+    setSuccessMessage('')
+    setIsDeleting(true)
+
+    try {
+      await api.delete(`/resumes/${resumeId}`)
+
+      const remainingResumes = resumes.filter((resume) => resume.id !== resumeId)
+      setResumes(remainingResumes)
+      setSelectedResumeId(remainingResumes[0]?.id ?? null)
+      setConfirmingDeleteId(null)
+
+      if (editingResumeId === resumeId) {
+        setEditingResumeId(null)
+        setFormState(initialFormState)
+      }
+
+      setSuccessMessage('Resume deleted.')
+    } catch (error) {
+      setErrorMessage(
+        getApiErrorMessage(error, 'We could not delete this resume. Please try again.'),
+      )
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -137,10 +220,9 @@ function ResumesPage() {
         <div className="workspace-header">
           <div>
             <p className="eyebrow">Resumes</p>
-            <h1>Build and manage your resume versions.</h1>
+            <h1>Your resume versions.</h1>
             <p className="hero-text">
-              This page already follows the backend contract: it loads paginated resume
-              data and submits new resumes to the protected API.
+              Keep a tailored version of your resume for each role you are targeting.
             </p>
           </div>
         </div>
@@ -161,10 +243,11 @@ function ResumesPage() {
           <div className="workspace-column">
             <div className="workspace-card">
               <div className="workspace-card-header">
-                <h2>Create a resume</h2>
+                <h2>{editingResumeId ? 'Edit resume' : 'Create a resume'}</h2>
                 <p className="workspace-card-copy">
-                  Start with a version label so later you can tailor multiple resumes for
-                  different roles.
+                  {editingResumeId
+                    ? 'Update the title or content, then save your changes.'
+                    : 'Give each version a clear title so you can tell them apart later.'}
                 </p>
               </div>
 
@@ -172,6 +255,7 @@ function ResumesPage() {
                 <label className="form-field" htmlFor="resumeTitle">
                   <span>Resume title</span>
                   <input
+                    ref={titleInputRef}
                     id="resumeTitle"
                     name="resumeTitle"
                     type="text"
@@ -193,9 +277,29 @@ function ResumesPage() {
                   />
                 </label>
 
-                <button className="button button-primary form-submit" type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? 'Saving resume...' : 'Save resume'}
-                </button>
+                <div className="form-actions">
+                  <button
+                    className="button button-primary form-submit"
+                    type="submit"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting
+                      ? 'Saving...'
+                      : editingResumeId
+                        ? 'Save changes'
+                        : 'Save resume'}
+                  </button>
+                  {editingResumeId ? (
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      onClick={cancelEditing}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
               </form>
             </div>
           </div>
@@ -206,8 +310,7 @@ function ResumesPage() {
                 <div>
                   <h2>Your saved resumes</h2>
                   <p className="workspace-card-copy">
-                    Select a version to review it while you keep building out your
-                    portfolio-ready workflow.
+                    Select a version to review, edit, or delete it.
                   </p>
                 </div>
                 <span className="workspace-stat">
@@ -218,15 +321,11 @@ function ResumesPage() {
               {isLoading ? (
                 <div className="workspace-empty-state">
                   <h3>Loading your resumes...</h3>
-                  <p>The frontend is asking the backend for your saved resume list.</p>
                 </div>
               ) : resumes.length === 0 ? (
                 <div className="workspace-empty-state">
                   <h3>No resumes yet.</h3>
-                  <p>
-                    Save your first resume on this page and it will appear here. This is
-                    the first step toward building the full analysis flow.
-                  </p>
+                  <p>Save your first resume using the form and it will appear here.</p>
                 </div>
               ) : (
                 <div className="resume-workspace">
@@ -238,7 +337,7 @@ function ResumesPage() {
                         className={`resume-list-item ${
                           selectedResumeId === resume.id ? 'is-selected' : ''
                         }`}
-                        onClick={() => setSelectedResumeId(resume.id)}
+                        onClick={() => selectResume(resume.id)}
                       >
                         <strong>{resume.title}</strong>
                         <span>
@@ -258,6 +357,48 @@ function ResumesPage() {
                         <p className="resume-preview-meta">
                           Created {new Date(selectedResume.created_at).toLocaleDateString()}
                         </p>
+                      </div>
+                      <div className="resume-preview-actions">
+                        {confirmingDeleteId === selectedResume.id ? (
+                          <>
+                            <span className="resume-preview-confirm">
+                              Delete this resume? This cannot be undone.
+                            </span>
+                            <button
+                              type="button"
+                              className="button button-small button-secondary"
+                              onClick={() => setConfirmingDeleteId(null)}
+                              disabled={isDeleting}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="button button-small button-danger-solid"
+                              onClick={() => void handleDelete(selectedResume.id)}
+                              disabled={isDeleting}
+                            >
+                              {isDeleting ? 'Deleting...' : 'Delete'}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className="button button-small button-secondary"
+                              onClick={() => startEditing(selectedResume)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="button button-small button-danger"
+                              onClick={() => setConfirmingDeleteId(selectedResume.id)}
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
                       </div>
                       <div className="resume-preview-body">
                         <pre>{selectedResume.content}</pre>
