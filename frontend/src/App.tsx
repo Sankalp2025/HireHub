@@ -1,18 +1,11 @@
-import { useEffect, useState } from 'react'
-import { BrowserRouter, NavLink, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import './App.css'
-import { clearAuthTokens, isLoggedIn } from './lib/auth'
-import { api, getApiErrorMessage, type ApiResponse } from './lib/api'
+import { AuthProvider } from './lib/AuthContext'
+import { useAuth } from './lib/useAuth'
+import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ResumesPage from './pages/ResumesPage'
-
-type CurrentUser = {
-  id: string
-  email: string
-  full_name: string
-  created_at: string
-}
 
 function HomePage() {
   const features = [
@@ -61,7 +54,7 @@ function HomePage() {
         </div>
 
         <aside className="hero-card" aria-label="Product summary">
-          <p className="hero-card-label">Core flow</p>
+          <p className="hero-card-label">How it works</p>
           <ul className="checklist">
             {workflowSteps.map((step) => (
               <li key={step}>{step}</li>
@@ -72,8 +65,8 @@ function HomePage() {
 
       <section className="section">
         <div className="section-heading">
-          <p className="eyebrow">What the frontend will cover</p>
-          <h2>We’re building the complete user-facing side of the project.</h2>
+          <p className="eyebrow">What you get</p>
+          <h2>Everything you need to tailor a resume to a specific role.</h2>
         </div>
 
         <div className="feature-grid">
@@ -91,113 +84,38 @@ function HomePage() {
 }
 
 function DashboardPage() {
-  const loggedIn = isLoggedIn()
-  const [user, setUser] = useState<CurrentUser | null>(null)
-  const [errorMessage, setErrorMessage] = useState('')
-  const [isLoading, setIsLoading] = useState(loggedIn)
-
-  useEffect(() => {
-    if (!loggedIn) {
-      setIsLoading(false)
-      setUser(null)
-      return
-    }
-
-    let isMounted = true
-
-    async function loadCurrentUser() {
-      try {
-        setIsLoading(true)
-        setErrorMessage('')
-
-        const response = await api.get<ApiResponse<CurrentUser>>('/auth/me')
-
-        if (!isMounted) {
-          return
-        }
-
-        if (!response.data.data) {
-          setErrorMessage('We could not load your account details.')
-          setUser(null)
-          return
-        }
-
-        setUser(response.data.data)
-      } catch (error) {
-        if (!isMounted) {
-          return
-        }
-
-        clearAuthTokens()
-        setUser(null)
-        setErrorMessage(
-          getApiErrorMessage(
-            error,
-            'Your session could not be verified. Please log in again.',
-          ),
-        )
-      } finally {
-        if (isMounted) {
-          setIsLoading(false)
-        }
-      }
-    }
-
-    void loadCurrentUser()
-
-    return () => {
-      isMounted = false
-    }
-  }, [loggedIn])
+  const { user } = useAuth()
 
   return (
     <main className="page">
       <section className="dashboard-panel">
         <p className="eyebrow">Workspace</p>
-        <h1>
-          {!loggedIn
-            ? 'Please log in to access your dashboard.'
-            : isLoading
-              ? 'Checking your session...'
-              : user
-                ? `Welcome back, ${user.full_name}.`
-                : 'Your session needs attention.'}
-        </h1>
+        <h1>Welcome back{user ? `, ${user.full_name}` : ''}.</h1>
         <p className="hero-text">
-          {!loggedIn
-            ? 'The dashboard is a private area. Once you log in, we can fetch your real account data and later show resumes, job descriptions, and analysis history here.'
-            : isLoading
-              ? 'The frontend is using your saved access token to ask the backend who the current user is.'
-              : user
-                ? 'Your session is now being validated with the backend, not just the browser. This is the foundation for protected pages and authenticated data fetching.'
-                : 'The frontend could not confirm your account with the backend. Logging in again should restore access.'}
+          Manage your saved resumes, job descriptions, and analysis history from here.
         </p>
-
-        {errorMessage ? (
-          <p className="form-message form-message-error dashboard-message" role="alert">
-            {errorMessage}
-          </p>
-        ) : null}
 
         {user ? (
           <div className="dashboard-grid">
             <article className="dashboard-card">
-              <p className="dashboard-card-label">Authenticated user</p>
+              <p className="dashboard-card-label">Account</p>
               <h2>{user.full_name}</h2>
               <p className="dashboard-card-value">{user.email}</p>
             </article>
 
             <article className="dashboard-card">
-              <p className="dashboard-card-label">Account status</p>
-              <h2>Active session</h2>
-              <p className="dashboard-card-value">Access token accepted by backend</p>
+              <p className="dashboard-card-label">Resumes</p>
+              <h2>Manage versions</h2>
+              <p className="dashboard-card-value">
+                <NavLink to="/resumes">Open resumes workspace</NavLink>
+              </p>
             </article>
 
             <article className="dashboard-card">
-              <p className="dashboard-card-label">Next frontend step</p>
-              <h2>Protected workspace</h2>
+              <p className="dashboard-card-label">Coming next</p>
+              <h2>Job descriptions & analysis</h2>
               <p className="dashboard-card-value">
-                Next we’ll turn this area into resume, job description, and analysis pages.
+                Save target roles and run match analyses against your resumes.
               </p>
             </article>
           </div>
@@ -208,6 +126,14 @@ function DashboardPage() {
 }
 
 function AppShell() {
+  const { isAuthenticated, isLoading, logout } = useAuth()
+  const navigate = useNavigate()
+
+  function handleLogout() {
+    logout()
+    navigate('/')
+  }
+
   return (
     <div className="app-shell">
       <header className="site-header">
@@ -221,25 +147,43 @@ function AppShell() {
 
         <nav className="site-nav" aria-label="Primary">
           <NavLink to="/">Home</NavLink>
-          <NavLink to="/login">Login</NavLink>
-          <NavLink to="/register">Register</NavLink>
-          <NavLink to="/dashboard">Dashboard</NavLink>
-          <NavLink to="/resumes">Resumes</NavLink>
+          {!isLoading && isAuthenticated ? (
+            <>
+              <NavLink to="/dashboard">Dashboard</NavLink>
+              <NavLink to="/resumes">Resumes</NavLink>
+              <button type="button" className="nav-logout" onClick={handleLogout}>
+                Log out
+              </button>
+            </>
+          ) : (
+            <>
+              <NavLink to="/login">Login</NavLink>
+              <NavLink to="/register">Register</NavLink>
+            </>
+          )}
         </nav>
       </header>
 
       <Routes>
         <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
         <Route
-          path="/login"
-          element={<LoginPage />}
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <DashboardPage />
+            </ProtectedRoute>
+          }
         />
         <Route
-          path="/register"
-          element={<RegisterPage />}
+          path="/resumes"
+          element={
+            <ProtectedRoute>
+              <ResumesPage />
+            </ProtectedRoute>
+          }
         />
-        <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/resumes" element={<ResumesPage />} />
       </Routes>
     </div>
   )
@@ -247,9 +191,11 @@ function AppShell() {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AppShell />
-    </BrowserRouter>
+    <AuthProvider>
+      <BrowserRouter>
+        <AppShell />
+      </BrowserRouter>
+    </AuthProvider>
   )
 }
 

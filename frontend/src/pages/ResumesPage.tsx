@@ -1,6 +1,4 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
-import { isLoggedIn } from '../lib/auth'
 import { api, getApiErrorMessage, type ApiResponse, type PaginatedResponse } from '../lib/api'
 
 type Resume = {
@@ -23,22 +21,15 @@ const initialFormState: ResumeFormState = {
 }
 
 function ResumesPage() {
-  const loggedIn = isLoggedIn()
   const [resumes, setResumes] = useState<Resume[]>([])
   const [formState, setFormState] = useState<ResumeFormState>(initialFormState)
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(loggedIn)
+  const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
-    if (!loggedIn) {
-      setIsLoading(false)
-      setResumes([])
-      return
-    }
-
     let isMounted = true
 
     async function loadResumes() {
@@ -78,7 +69,7 @@ function ResumesPage() {
     return () => {
       isMounted = false
     }
-  }, [loggedIn])
+  }, [])
 
   function updateField(field: keyof ResumeFormState, value: string) {
     setFormState((currentState) => ({
@@ -139,29 +130,6 @@ function ResumesPage() {
   }
 
   const selectedResume = resumes.find((resume) => resume.id === selectedResumeId) ?? null
-
-  if (!loggedIn) {
-    return (
-      <main className="page">
-        <section className="workspace-panel">
-          <p className="eyebrow">Resumes</p>
-          <h1>Please log in to manage your resumes.</h1>
-          <p className="hero-text">
-            This page is built against the protected backend resume endpoints, so you need
-            an authenticated session before we can load or save anything.
-          </p>
-          <div className="hero-actions">
-            <Link className="button button-primary" to="/login">
-              Go to login
-            </Link>
-            <Link className="button button-secondary" to="/register">
-              Create account
-            </Link>
-          </div>
-        </section>
-      </main>
-    )
-  }
 
   return (
     <main className="page workspace-page">

@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api, getApiErrorMessage, type ApiResponse } from '../lib/api'
 
 type RegisterFormState = {
@@ -22,9 +22,9 @@ const initialFormState: RegisterFormState = {
 }
 
 function RegisterPage() {
+  const navigate = useNavigate()
   const [formState, setFormState] = useState<RegisterFormState>(initialFormState)
   const [errorMessage, setErrorMessage] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   function updateField(field: keyof RegisterFormState, value: string) {
@@ -54,7 +54,6 @@ function RegisterPage() {
     event.preventDefault()
 
     setErrorMessage('')
-    setSuccessMessage('')
 
     const validationMessage = validateForm()
     if (validationMessage) {
@@ -76,10 +75,7 @@ function RegisterPage() {
         return
       }
 
-      setSuccessMessage(
-        `Account created for ${response.data.data.full_name}. Next we’ll connect this to login.`,
-      )
-      setFormState(initialFormState)
+      navigate('/login', { state: { registered: true } })
     } catch (error) {
       setErrorMessage(
         getApiErrorMessage(error, 'We could not create your account. Please try again.'),
@@ -96,19 +92,8 @@ function RegisterPage() {
           <p className="eyebrow">Authentication</p>
           <h1>Create your HireHub account.</h1>
           <p className="hero-text">
-            This form sends a real request to the FastAPI backend. That means you are now
-            building actual frontend behavior, not just static screens.
+            Save resumes, target job descriptions, and run match analyses in one place.
           </p>
-
-          <div className="auth-note-card">
-            <h2>What this page teaches</h2>
-            <ul className="auth-note-list">
-              <li>How React stores form values in state</li>
-              <li>How a submit handler prevents the browser refresh</li>
-              <li>How the frontend sends JSON to the backend</li>
-              <li>How success and error messages are shown to the user</li>
-            </ul>
-          </div>
         </div>
 
         <div className="auth-form-card">
@@ -163,12 +148,6 @@ function RegisterPage() {
             {errorMessage ? (
               <p className="form-message form-message-error" role="alert">
                 {errorMessage}
-              </p>
-            ) : null}
-
-            {successMessage ? (
-              <p className="form-message form-message-success" role="status">
-                {successMessage}
               </p>
             ) : null}
 

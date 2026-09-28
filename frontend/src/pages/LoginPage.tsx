@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { saveAuthTokens } from '../lib/auth'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../lib/useAuth'
 import { api, getApiErrorMessage, type ApiResponse } from '../lib/api'
 
 type LoginFormState = {
@@ -22,9 +22,12 @@ const initialFormState: LoginFormState = {
 
 function LoginPage() {
   const navigate = useNavigate()
+  const location = useLocation()
+  const { login } = useAuth()
+  const justRegistered = Boolean((location.state as { registered?: boolean } | null)?.registered)
+
   const [formState, setFormState] = useState<LoginFormState>(initialFormState)
   const [errorMessage, setErrorMessage] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   function updateField(field: keyof LoginFormState, value: string) {
@@ -49,7 +52,6 @@ function LoginPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     setErrorMessage('')
-    setSuccessMessage('')
 
     const validationMessage = validateForm()
     if (validationMessage) {
@@ -70,17 +72,12 @@ function LoginPage() {
         return
       }
 
-      saveAuthTokens({
+      await login({
         accessToken: response.data.data.access_token,
         refreshToken: response.data.data.refresh_token,
       })
 
-      setSuccessMessage('Login successful. Redirecting to your dashboard...')
-      setFormState(initialFormState)
-
-      setTimeout(() => {
-        navigate('/dashboard')
-      }, 700)
+      navigate('/dashboard')
     } catch (error) {
       setErrorMessage(getApiErrorMessage(error, 'We could not log you in. Please try again.'))
     } finally {
@@ -93,21 +90,10 @@ function LoginPage() {
       <section className="auth-layout">
         <div className="auth-intro">
           <p className="eyebrow">Authentication</p>
-          <h1>Sign in and start using the app.</h1>
+          <h1>Sign in to your workspace.</h1>
           <p className="hero-text">
-            This page uses the same frontend pattern as registration, but now the backend
-            returns tokens that let the app recognize an authenticated user.
+            Access your saved resumes, job descriptions, and analysis history.
           </p>
-
-          <div className="auth-note-card">
-            <h2>What this page teaches</h2>
-            <ul className="auth-note-list">
-              <li>How one API pattern can power multiple forms</li>
-              <li>How login tokens are returned from the backend</li>
-              <li>How the browser can store session data in local storage</li>
-              <li>How navigation can happen after a successful action</li>
-            </ul>
-          </div>
         </div>
 
         <div className="auth-form-card">
@@ -152,9 +138,9 @@ function LoginPage() {
               </p>
             ) : null}
 
-            {successMessage ? (
+            {!errorMessage && justRegistered ? (
               <p className="form-message form-message-success" role="status">
-                {successMessage}
+                Account created. Sign in to continue.
               </p>
             ) : null}
 

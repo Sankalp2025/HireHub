@@ -71,6 +71,26 @@
   color: var(--color-heading);
 }
 
+.nav-logout {
+  background: transparent;
+  border: 1px solid var(--color-border-strong);
+  border-radius: 999px;
+  color: var(--color-muted);
+  cursor: pointer;
+  font: inherit;
+  padding: 0.65rem 0.95rem;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease;
+}
+
+.nav-logout:hover {
+  background: rgba(148, 49, 38, 0.08);
+  border-color: var(--color-accent);
+  color: var(--color-heading);
+}
+
 .page {
   margin: 0 auto;
   max-width: 1180px;
@@ -287,7 +307,6 @@
   padding: 2rem 0.75rem 0 0;
 }
 
-.auth-note-card,
 .auth-form-card {
   background:
     radial-gradient(circle at top left, rgba(148, 49, 38, 0.08), transparent 26%),
@@ -295,28 +314,7 @@
   border: 1px solid var(--color-border);
   border-radius: 28px;
   box-shadow: 0 18px 50px rgba(48, 41, 31, 0.08);
-}
 
-.auth-note-card {
-  margin-top: 2rem;
-  padding: 1.5rem;
-}
-
-.auth-note-card h2 {
-  font-size: 1.4rem;
-  margin-bottom: 1rem;
-}
-
-.auth-note-list {
-  color: var(--color-muted);
-  display: grid;
-  gap: 0.85rem;
-  line-height: 1.65;
-  margin: 0;
-  padding-left: 1.1rem;
-}
-
-.auth-form-card {
   padding: 1.75rem;
 }
 
