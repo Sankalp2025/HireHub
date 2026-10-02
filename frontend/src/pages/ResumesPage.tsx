@@ -1,5 +1,11 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { api, getApiErrorMessage, type ApiResponse, type PaginatedResponse } from '../lib/api'
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
+import {
+  api,
+  getApiErrorMessage,
+  postFormData,
+  type ApiResponse,
+  type PaginatedResponse,
+} from '../lib/api'
 
 type Resume = {
   id: string
@@ -20,6 +26,9 @@ const initialFormState: ResumeFormState = {
   content: '',
 }
 
+const MAX_PDF_SIZE_BYTES = 5 * 1024 * 1024
+type ResumeSource = 'text' | 'pdf'
+
 function ResumesPage() {
   const [resumes, setResumes] = useState<Resume[]>([])
   const [formState, setFormState] = useState<ResumeFormState>(initialFormState)
@@ -29,7 +38,10 @@ function ResumesPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [resumeSource, setResumeSource] = useState<ResumeSource>('text')
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const titleInputRef = useRef<HTMLInputElement>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
   const [errorMessage, setErrorMessage] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
 
@@ -87,11 +99,34 @@ function ResumesPage() {
       return 'Please give this resume a title.'
     }
 
+    if (resumeSource === 'pdf' && !editingResumeId) {
+      if (!selectedFile) {
+        return 'Please choose a PDF file to upload.'
+      }
+      if (selectedFile.type !== 'application/pdf') {
+        return 'Only PDF files are accepted.'
+      }
+      if (selectedFile.size > MAX_PDF_SIZE_BYTES) {
+        return 'File size exceeds the maximum of 5 MB.'
+      }
+      return ''
+    }
+
     if (formState.content.trim().length < 50) {
       return 'Resume content must be at least 50 characters.'
     }
 
     return ''
+  }
+
+  function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
+    setSelectedFile(event.target.files?.[0] ?? null)
+  }
+
+  function switchSource(source: ResumeSource) {
+    setResumeSource(source)
+    setSelectedFile(null)
+    setErrorMessage('')
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -114,6 +149,30 @@ function ResumesPage() {
     }
 
     try {
+      if (resumeSource === 'pdf' && !editingResumeId && selectedFile) {
+        const uploadData = new FormData()
+        uploadData.append('file', selectedFile)
+        uploadData.append('title', formState.title.trim())
+
+        const response = await postFormData<ApiResponse<Resume>>('/resumes/upload', uploadData)
+
+        const uploadedResume = response.data.data
+        if (!uploadedResume) {
+          setErrorMessage('The backend did not return the uploaded resume.')
+          return
+        }
+
+        setResumes((currentResumes) => [uploadedResume, ...currentResumes])
+        setSelectedResumeId(uploadedResume.id)
+        setFormState(initialFormState)
+        setSelectedFile(null)
+        if (fileInputRef.current) {
+          fileInputRef.current.value = ''
+        }
+        setSuccessMessage('Resume uploaded.')
+        return
+      }
+
       if (editingResumeId) {
         const response = await api.patch<ApiResponse<Resume>>(
           `/resumes/${editingResumeId}`,
@@ -156,7 +215,9 @@ function ResumesPage() {
           error,
           editingResumeId
             ? 'We could not save your changes. Please try again.'
-            : 'We could not save your resume. Please try again.',
+            : resumeSource === 'pdf'
+              ? 'We could not upload your resume. Please try again.'
+              : 'We could not save your resume. Please try again.',
         ),
       )
     } finally {
@@ -169,6 +230,8 @@ function ResumesPage() {
     setSuccessMessage('')
     setConfirmingDeleteId(null)
     setEditingResumeId(resume.id)
+    setResumeSource('text')
+    setSelectedFile(null)
     setFormState({ title: resume.title, content: resume.content })
     titleInputRef.current?.focus()
   }
@@ -251,6 +314,29 @@ function ResumesPage() {
                 </p>
               </div>
 
+              {!editingResumeId ? (
+                <div className="source-tabs" role="tablist" aria-label="Resume source">
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={resumeSource === 'text'}
+                    className={`source-tab ${resumeSource === 'text' ? 'is-active' : ''}`}
+                    onClick={() => switchSource('text')}
+                  >
+                    Paste text
+                  </button>
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={resumeSource === 'pdf'}
+                    className={`source-tab ${resumeSource === 'pdf' ? 'is-active' : ''}`}
+                    onClick={() => switchSource('pdf')}
+                  >
+                    Upload PDF
+                  </button>
+                </div>
+              ) : null}
+
               <form className="workspace-form" onSubmit={handleSubmit}>
                 <label className="form-field" htmlFor="resumeTitle">
                   <span>Resume title</span>
@@ -265,17 +351,34 @@ function ResumesPage() {
                   />
                 </label>
 
-                <label className="form-field" htmlFor="resumeContent">
-                  <span>Resume content</span>
-                  <textarea
-                    id="resumeContent"
-                    name="resumeContent"
-                    placeholder="Paste your resume text here..."
-                    value={formState.content}
-                    onChange={(event) => updateField('content', event.target.value)}
-                    rows={14}
-                  />
-                </label>
+                {resumeSource === 'pdf' && !editingResumeId ? (
+                  <label className="form-field" htmlFor="resumeFile">
+                    <span>PDF file</span>
+                    <input
+                      ref={fileInputRef}
+                      id="resumeFile"
+                      name="resumeFile"
+                      type="file"
+                      accept="application/pdf"
+                      onChange={handleFileChange}
+                    />
+                    <span className="form-field-hint">
+                      {selectedFile ? selectedFile.name : 'PDF only, up to 5 MB.'}
+                    </span>
+                  </label>
+                ) : (
+                  <label className="form-field" htmlFor="resumeContent">
+                    <span>Resume content</span>
+                    <textarea
+                      id="resumeContent"
+                      name="resumeContent"
+                      placeholder="Paste your resume text here..."
+                      value={formState.content}
+                      onChange={(event) => updateField('content', event.target.value)}
+                      rows={14}
+                    />
+                  </label>
+                )}
 
                 <div className="form-actions">
                   <button
@@ -284,10 +387,14 @@ function ResumesPage() {
                     disabled={isSubmitting}
                   >
                     {isSubmitting
-                      ? 'Saving...'
+                      ? resumeSource === 'pdf' && !editingResumeId
+                        ? 'Uploading...'
+                        : 'Saving...'
                       : editingResumeId
                         ? 'Save changes'
-                        : 'Save resume'}
+                        : resumeSource === 'pdf'
+                          ? 'Upload resume'
+                          : 'Save resume'}
                   </button>
                   {editingResumeId ? (
                     <button

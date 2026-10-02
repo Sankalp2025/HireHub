@@ -38,6 +38,12 @@ api.interceptors.request.use((config) => {
   return config
 })
 
+export function postFormData<T>(url: string, formData: FormData) {
+  // Let the browser set its own multipart boundary instead of the instance's
+  // default JSON content type.
+  return api.post<T>(url, formData, { headers: { 'Content-Type': undefined } })
+}
+
 export function getApiErrorMessage(error: unknown, fallbackMessage: string) {
   if (axios.isAxiosError<ApiResponse<unknown>>(error)) {
     return error.response?.data?.error?.message ?? fallbackMessage

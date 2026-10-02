@@ -522,6 +522,50 @@
   gap: 1rem;
 }
 
+.source-tabs {
+  display: inline-flex;
+  gap: 0.35rem;
+  background: rgba(68, 59, 49, 0.06);
+  border-radius: 999px;
+  padding: 0.3rem;
+  margin-bottom: 1.1rem;
+}
+
+.source-tab {
+  background: transparent;
+  border: 0;
+  border-radius: 999px;
+  color: var(--color-muted);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease;
+}
+
+.source-tab.is-active {
+  background: rgba(255, 253, 248, 0.95);
+  box-shadow: 0 6px 14px rgba(48, 41, 31, 0.1);
+  color: var(--color-heading);
+}
+
+.form-field input[type='file'] {
+  background: rgba(255, 255, 255, 0.78);
+  border: 1px dashed var(--color-border-strong);
+  border-radius: 18px;
+  color: var(--color-body);
+  font: inherit;
+  padding: 0.85rem;
+}
+
+.form-field-hint {
+  color: var(--color-muted);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
 .form-field textarea {
   background: rgba(255, 255, 255, 0.78);
   border: 1px solid var(--color-border-strong);
