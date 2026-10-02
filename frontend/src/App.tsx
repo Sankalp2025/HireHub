@@ -6,6 +6,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ResumesPage from './pages/ResumesPage'
+import JobDescriptionsPage from './pages/JobDescriptionsPage'
 
 function HomePage() {
   const features = [
@@ -112,10 +113,18 @@ function DashboardPage() {
             </article>
 
             <article className="dashboard-card">
-              <p className="dashboard-card-label">Coming next</p>
-              <h2>Job descriptions & analysis</h2>
+              <p className="dashboard-card-label">Job descriptions</p>
+              <h2>Track target roles</h2>
               <p className="dashboard-card-value">
-                Save target roles and run match analyses against your resumes.
+                <NavLink to="/job-descriptions">Open job descriptions workspace</NavLink>
+              </p>
+            </article>
+
+            <article className="dashboard-card">
+              <p className="dashboard-card-label">Coming next</p>
+              <h2>Match analysis</h2>
+              <p className="dashboard-card-value">
+                Run analyses comparing a resume against a job description.
               </p>
             </article>
           </div>
@@ -151,6 +160,7 @@ function AppShell() {
             <>
               <NavLink to="/dashboard">Dashboard</NavLink>
               <NavLink to="/resumes">Resumes</NavLink>
+              <NavLink to="/job-descriptions">Job descriptions</NavLink>
               <button type="button" className="nav-logout" onClick={handleLogout}>
                 Log out
               </button>
@@ -181,6 +191,14 @@ function AppShell() {
           element={
             <ProtectedRoute>
               <ResumesPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/job-descriptions"
+          element={
+            <ProtectedRoute>
+              <JobDescriptionsPage />
             </ProtectedRoute>
           }
         />
