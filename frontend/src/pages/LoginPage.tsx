@@ -2,6 +2,7 @@ import { useState, type FormEvent } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../lib/useAuth'
 import { api, getApiErrorMessage, type ApiResponse } from '../lib/api'
+import Spinner from '../components/Spinner'
 
 type LoginFormState = {
   email: string
@@ -145,7 +146,7 @@ function LoginPage() {
             ) : null}
 
             <button className="button button-primary form-submit" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Signing in...' : 'Sign in'}
+              {isSubmitting ? <Spinner label="Signing in..." /> : 'Sign in'}
             </button>
           </form>
 

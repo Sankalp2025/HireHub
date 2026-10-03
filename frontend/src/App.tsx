@@ -1,12 +1,15 @@
 import { BrowserRouter, NavLink, Route, Routes, useNavigate } from 'react-router-dom'
 import './App.css'
 import { AuthProvider } from './lib/AuthContext'
+import { ToastProvider } from './lib/ToastProvider'
 import { useAuth } from './lib/useAuth'
 import ProtectedRoute from './components/ProtectedRoute'
 import LoginPage from './pages/LoginPage'
 import RegisterPage from './pages/RegisterPage'
 import ResumesPage from './pages/ResumesPage'
 import JobDescriptionsPage from './pages/JobDescriptionsPage'
+import AnalyzePage from './pages/AnalyzePage'
+import HistoryPage from './pages/HistoryPage'
 
 function HomePage() {
   const features = [
@@ -121,10 +124,18 @@ function DashboardPage() {
             </article>
 
             <article className="dashboard-card">
-              <p className="dashboard-card-label">Coming next</p>
-              <h2>Match analysis</h2>
+              <p className="dashboard-card-label">Match analysis</p>
+              <h2>Compare resume to role</h2>
               <p className="dashboard-card-value">
-                Run analyses comparing a resume against a job description.
+                <NavLink to="/analyze">Run an analysis</NavLink>
+              </p>
+            </article>
+
+            <article className="dashboard-card">
+              <p className="dashboard-card-label">History</p>
+              <h2>Past analyses</h2>
+              <p className="dashboard-card-value">
+                <NavLink to="/history">View history</NavLink>
               </p>
             </article>
           </div>
@@ -161,6 +172,8 @@ function AppShell() {
               <NavLink to="/dashboard">Dashboard</NavLink>
               <NavLink to="/resumes">Resumes</NavLink>
               <NavLink to="/job-descriptions">Job descriptions</NavLink>
+              <NavLink to="/analyze">Analyze</NavLink>
+              <NavLink to="/history">History</NavLink>
               <button type="button" className="nav-logout" onClick={handleLogout}>
                 Log out
               </button>
@@ -202,6 +215,22 @@ function AppShell() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="/analyze"
+          element={
+            <ProtectedRoute>
+              <AnalyzePage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/history"
+          element={
+            <ProtectedRoute>
+              <HistoryPage />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </div>
   )
@@ -209,11 +238,13 @@ function AppShell() {
 
 function App() {
   return (
-    <AuthProvider>
-      <BrowserRouter>
-        <AppShell />
-      </BrowserRouter>
-    </AuthProvider>
+    <ToastProvider>
+      <AuthProvider>
+        <BrowserRouter>
+          <AppShell />
+        </BrowserRouter>
+      </AuthProvider>
+    </ToastProvider>
   )
 }
 

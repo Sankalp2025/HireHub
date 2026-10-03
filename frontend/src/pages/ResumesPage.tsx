@@ -6,6 +6,8 @@ import {
   type ApiResponse,
   type PaginatedResponse,
 } from '../lib/api'
+import { useToast } from '../lib/useToast'
+import Spinner from '../components/Spinner'
 
 type Resume = {
   id: string
@@ -30,6 +32,7 @@ const MAX_PDF_SIZE_BYTES = 5 * 1024 * 1024
 type ResumeSource = 'text' | 'pdf'
 
 function ResumesPage() {
+  const { showToast } = useToast()
   const [resumes, setResumes] = useState<Resume[]>([])
   const [formState, setFormState] = useState<ResumeFormState>(initialFormState)
   const [selectedResumeId, setSelectedResumeId] = useState<string | null>(null)
@@ -43,7 +46,6 @@ function ResumesPage() {
   const titleInputRef = useRef<HTMLInputElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [errorMessage, setErrorMessage] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
 
   useEffect(() => {
     let isMounted = true
@@ -133,7 +135,6 @@ function ResumesPage() {
     event.preventDefault()
 
     setErrorMessage('')
-    setSuccessMessage('')
 
     const validationMessage = validateForm()
     if (validationMessage) {
@@ -169,7 +170,7 @@ function ResumesPage() {
         if (fileInputRef.current) {
           fileInputRef.current.value = ''
         }
-        setSuccessMessage('Resume uploaded.')
+        showToast('Resume uploaded.')
         return
       }
 
@@ -193,7 +194,7 @@ function ResumesPage() {
         setSelectedResumeId(updatedResume.id)
         setEditingResumeId(null)
         setFormState(initialFormState)
-        setSuccessMessage('Changes saved.')
+        showToast('Changes saved.')
         return
       }
 
@@ -208,9 +209,9 @@ function ResumesPage() {
       setResumes((currentResumes) => [createdResume, ...currentResumes])
       setSelectedResumeId(createdResume.id)
       setFormState(initialFormState)
-      setSuccessMessage('Resume saved.')
+      showToast('Resume saved.')
     } catch (error) {
-      setErrorMessage(
+      showToast(
         getApiErrorMessage(
           error,
           editingResumeId
@@ -219,6 +220,7 @@ function ResumesPage() {
               ? 'We could not upload your resume. Please try again.'
               : 'We could not save your resume. Please try again.',
         ),
+        'error',
       )
     } finally {
       setIsSubmitting(false)
@@ -227,7 +229,6 @@ function ResumesPage() {
 
   function startEditing(resume: Resume) {
     setErrorMessage('')
-    setSuccessMessage('')
     setConfirmingDeleteId(null)
     setEditingResumeId(resume.id)
     setResumeSource('text')
@@ -248,8 +249,6 @@ function ResumesPage() {
   }
 
   async function handleDelete(resumeId: string) {
-    setErrorMessage('')
-    setSuccessMessage('')
     setIsDeleting(true)
 
     try {
@@ -265,10 +264,11 @@ function ResumesPage() {
         setFormState(initialFormState)
       }
 
-      setSuccessMessage('Resume deleted.')
+      showToast('Resume deleted.')
     } catch (error) {
-      setErrorMessage(
+      showToast(
         getApiErrorMessage(error, 'We could not delete this resume. Please try again.'),
+        'error',
       )
     } finally {
       setIsDeleting(false)
@@ -293,12 +293,6 @@ function ResumesPage() {
         {errorMessage ? (
           <p className="form-message form-message-error workspace-message" role="alert">
             {errorMessage}
-          </p>
-        ) : null}
-
-        {successMessage ? (
-          <p className="form-message form-message-success workspace-message" role="status">
-            {successMessage}
           </p>
         ) : null}
 
@@ -386,15 +380,17 @@ function ResumesPage() {
                     type="submit"
                     disabled={isSubmitting}
                   >
-                    {isSubmitting
-                      ? resumeSource === 'pdf' && !editingResumeId
-                        ? 'Uploading...'
-                        : 'Saving...'
-                      : editingResumeId
-                        ? 'Save changes'
-                        : resumeSource === 'pdf'
-                          ? 'Upload resume'
-                          : 'Save resume'}
+                    {isSubmitting ? (
+                      <Spinner
+                        label={resumeSource === 'pdf' && !editingResumeId ? 'Uploading...' : 'Saving...'}
+                      />
+                    ) : editingResumeId ? (
+                      'Save changes'
+                    ) : resumeSource === 'pdf' ? (
+                      'Upload resume'
+                    ) : (
+                      'Save resume'
+                    )}
                   </button>
                   {editingResumeId ? (
                     <button
@@ -427,7 +423,7 @@ function ResumesPage() {
 
               {isLoading ? (
                 <div className="workspace-empty-state">
-                  <h3>Loading your resumes...</h3>
+                  <Spinner label="Loading your resumes..." />
                 </div>
               ) : resumes.length === 0 ? (
                 <div className="workspace-empty-state">
@@ -485,7 +481,7 @@ function ResumesPage() {
                               onClick={() => void handleDelete(selectedResume.id)}
                               disabled={isDeleting}
                             >
-                              {isDeleting ? 'Deleting...' : 'Delete'}
+                              {isDeleting ? <Spinner label="Deleting..." /> : 'Delete'}
                             </button>
                           </>
                         ) : (

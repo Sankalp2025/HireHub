@@ -1,6 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { api, getApiErrorMessage, type ApiResponse } from '../lib/api'
+import Spinner from '../components/Spinner'
 
 type RegisterFormState = {
   fullName: string
@@ -152,7 +153,7 @@ function RegisterPage() {
             ) : null}
 
             <button className="button button-primary form-submit" type="submit" disabled={isSubmitting}>
-              {isSubmitting ? 'Creating account...' : 'Create account'}
+              {isSubmitting ? <Spinner label="Creating account..." /> : 'Create account'}
             </button>
           </form>
 

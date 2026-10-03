@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { api, getApiErrorMessage, type ApiResponse, type PaginatedResponse } from '../lib/api'
+import { useToast } from '../lib/useToast'
+import Spinner from '../components/Spinner'
 
 type JobDescription = {
   id: string
@@ -27,13 +29,16 @@ const initialFormState: JobDescriptionFormState = {
 }
 
 function JobDescriptionsPage() {
+  const { showToast } = useToast()
   const [jobDescriptions, setJobDescriptions] = useState<JobDescription[]>([])
   const [formState, setFormState] = useState<JobDescriptionFormState>(initialFormState)
   const [selectedId, setSelectedId] = useState<string | null>(null)
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [confirmingDeleteId, setConfirmingDeleteId] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
   const titleInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -103,7 +108,6 @@ function JobDescriptionsPage() {
     event.preventDefault()
 
     setErrorMessage('')
-    setSuccessMessage('')
 
     const validationMessage = validateForm()
     if (validationMessage) {
@@ -113,13 +117,39 @@ function JobDescriptionsPage() {
 
     setIsSubmitting(true)
 
+    const payload = {
+      title: formState.title.trim(),
+      company: formState.company.trim() || null,
+      role: formState.role.trim() || null,
+      content: formState.content.trim(),
+    }
+
     try {
-      const response = await api.post<ApiResponse<JobDescription>>('/job-descriptions', {
-        title: formState.title.trim(),
-        company: formState.company.trim() || null,
-        role: formState.role.trim() || null,
-        content: formState.content.trim(),
-      })
+      if (editingId) {
+        const response = await api.patch<ApiResponse<JobDescription>>(
+          `/job-descriptions/${editingId}`,
+          payload,
+        )
+
+        const updatedJobDescription = response.data.data
+        if (!updatedJobDescription) {
+          setErrorMessage('The backend did not return the updated job description.')
+          return
+        }
+
+        setJobDescriptions((current) =>
+          current.map((jobDescription) =>
+            jobDescription.id === updatedJobDescription.id ? updatedJobDescription : jobDescription,
+          ),
+        )
+        setSelectedId(updatedJobDescription.id)
+        setEditingId(null)
+        setFormState(initialFormState)
+        showToast('Changes saved.')
+        return
+      }
+
+      const response = await api.post<ApiResponse<JobDescription>>('/job-descriptions', payload)
 
       const createdJobDescription = response.data.data
       if (!createdJobDescription) {
@@ -130,14 +160,71 @@ function JobDescriptionsPage() {
       setJobDescriptions((current) => [createdJobDescription, ...current])
       setSelectedId(createdJobDescription.id)
       setFormState(initialFormState)
-      setSuccessMessage('Job description saved.')
+      showToast('Job description saved.')
       titleInputRef.current?.focus()
     } catch (error) {
-      setErrorMessage(
-        getApiErrorMessage(error, 'We could not save this job description. Please try again.'),
+      showToast(
+        getApiErrorMessage(
+          error,
+          editingId
+            ? 'We could not save your changes. Please try again.'
+            : 'We could not save this job description. Please try again.',
+        ),
+        'error',
       )
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  function startEditing(jobDescription: JobDescription) {
+    setErrorMessage('')
+    setConfirmingDeleteId(null)
+    setEditingId(jobDescription.id)
+    setFormState({
+      title: jobDescription.title,
+      company: jobDescription.company ?? '',
+      role: jobDescription.role ?? '',
+      content: jobDescription.content,
+    })
+    titleInputRef.current?.focus()
+  }
+
+  function cancelEditing() {
+    setEditingId(null)
+    setFormState(initialFormState)
+    setErrorMessage('')
+  }
+
+  function selectJobDescription(id: string) {
+    setSelectedId(id)
+    setConfirmingDeleteId(null)
+  }
+
+  async function handleDelete(id: string) {
+    setIsDeleting(true)
+
+    try {
+      await api.delete(`/job-descriptions/${id}`)
+
+      const remaining = jobDescriptions.filter((jobDescription) => jobDescription.id !== id)
+      setJobDescriptions(remaining)
+      setSelectedId(remaining[0]?.id ?? null)
+      setConfirmingDeleteId(null)
+
+      if (editingId === id) {
+        setEditingId(null)
+        setFormState(initialFormState)
+      }
+
+      showToast('Job description deleted.')
+    } catch (error) {
+      showToast(
+        getApiErrorMessage(error, 'We could not delete this job description. Please try again.'),
+        'error',
+      )
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -164,20 +251,15 @@ function JobDescriptionsPage() {
           </p>
         ) : null}
 
-        {successMessage ? (
-          <p className="form-message form-message-success workspace-message" role="status">
-            {successMessage}
-          </p>
-        ) : null}
-
         <div className="workspace-layout">
           <div className="workspace-column">
             <div className="workspace-card">
               <div className="workspace-card-header">
-                <h2>Add a job description</h2>
+                <h2>{editingId ? 'Edit job description' : 'Add a job description'}</h2>
                 <p className="workspace-card-copy">
-                  Company and role are optional, but they make it easier to tell roles apart
-                  later.
+                  {editingId
+                    ? 'Update any field, then save your changes.'
+                    : 'Company and role are optional, but they make it easier to tell roles apart later.'}
                 </p>
               </div>
 
@@ -231,13 +313,31 @@ function JobDescriptionsPage() {
                   />
                 </label>
 
-                <button
-                  className="button button-primary form-submit"
-                  type="submit"
-                  disabled={isSubmitting}
-                >
-                  {isSubmitting ? 'Saving...' : 'Save job description'}
-                </button>
+                <div className="form-actions">
+                  <button
+                    className="button button-primary form-submit"
+                    type="submit"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? (
+                      <Spinner label="Saving..." />
+                    ) : editingId ? (
+                      'Save changes'
+                    ) : (
+                      'Save job description'
+                    )}
+                  </button>
+                  {editingId ? (
+                    <button
+                      className="button button-secondary"
+                      type="button"
+                      onClick={cancelEditing}
+                      disabled={isSubmitting}
+                    >
+                      Cancel
+                    </button>
+                  ) : null}
+                </div>
               </form>
             </div>
           </div>
@@ -256,7 +356,7 @@ function JobDescriptionsPage() {
 
               {isLoading ? (
                 <div className="workspace-empty-state">
-                  <h3>Loading your job descriptions...</h3>
+                  <Spinner label="Loading your job descriptions..." />
                 </div>
               ) : jobDescriptions.length === 0 ? (
                 <div className="workspace-empty-state">
@@ -273,7 +373,7 @@ function JobDescriptionsPage() {
                         className={`resume-list-item ${
                           selectedId === jobDescription.id ? 'is-selected' : ''
                         }`}
-                        onClick={() => setSelectedId(jobDescription.id)}
+                        onClick={() => selectJobDescription(jobDescription.id)}
                       >
                         <strong>{jobDescription.title}</strong>
                         <span>
@@ -296,6 +396,48 @@ function JobDescriptionsPage() {
                           Created{' '}
                           {new Date(selectedJobDescription.created_at).toLocaleDateString()}
                         </p>
+                      </div>
+                      <div className="resume-preview-actions">
+                        {confirmingDeleteId === selectedJobDescription.id ? (
+                          <>
+                            <span className="resume-preview-confirm">
+                              Delete this job description? This cannot be undone.
+                            </span>
+                            <button
+                              type="button"
+                              className="button button-small button-secondary"
+                              onClick={() => setConfirmingDeleteId(null)}
+                              disabled={isDeleting}
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              className="button button-small button-danger-solid"
+                              onClick={() => void handleDelete(selectedJobDescription.id)}
+                              disabled={isDeleting}
+                            >
+                              {isDeleting ? <Spinner label="Deleting..." /> : 'Delete'}
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button
+                              type="button"
+                              className="button button-small button-secondary"
+                              onClick={() => startEditing(selectedJobDescription)}
+                            >
+                              Edit
+                            </button>
+                            <button
+                              type="button"
+                              className="button button-small button-danger"
+                              onClick={() => setConfirmingDeleteId(selectedJobDescription.id)}
+                            >
+                              Delete
+                            </button>
+                          </>
+                        )}
                       </div>
                       <div className="resume-preview-body">
                         <pre>{selectedJobDescription.content}</pre>

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../lib/useAuth'
+import Spinner from './Spinner'
 
 function ProtectedRoute({ children }: { children: ReactNode }) {
   const { isAuthenticated, isLoading } = useAuth()
@@ -9,7 +10,7 @@ function ProtectedRoute({ children }: { children: ReactNode }) {
   if (isLoading) {
     return (
       <main className="page">
-        <p className="hero-text">Checking your session...</p>
+        <Spinner label="Checking your session..." />
       </main>
     )
   }
