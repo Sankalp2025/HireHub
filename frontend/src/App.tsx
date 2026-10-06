@@ -10,6 +10,7 @@ import ResumesPage from './pages/ResumesPage'
 import JobDescriptionsPage from './pages/JobDescriptionsPage'
 import AnalyzePage from './pages/AnalyzePage'
 import HistoryPage from './pages/HistoryPage'
+import NotFoundPage from './pages/NotFoundPage'
 
 function HomePage() {
   const features = [
@@ -231,6 +232,7 @@ function AppShell() {
             </ProtectedRoute>
           }
         />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </div>
   )

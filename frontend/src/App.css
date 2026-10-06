@@ -120,6 +120,20 @@
   padding: 1rem 0;
 }
 
+.not-found-panel {
+  grid-template-columns: 1fr;
+  padding: 3rem 2rem;
+  text-align: center;
+}
+
+.not-found-panel .hero-text {
+  margin: 0 auto;
+}
+
+.not-found-panel .hero-actions {
+  justify-content: center;
+}
+
 .eyebrow {
   color: var(--color-accent);
   font-size: 0.78rem;
@@ -1001,5 +1015,70 @@
   .workspace-card-header-row,
   .resume-preview-header {
     flex-direction: column;
+  }
+}
+
+@media (max-width: 600px) {
+  .site-header {
+    padding: 1rem;
+  }
+
+  .brand-mark p {
+    display: none;
+  }
+
+  .site-nav {
+    gap: 0.4rem;
+  }
+
+  .site-nav a,
+  .nav-logout {
+    font-size: 0.85rem;
+    padding: 0.5rem 0.75rem;
+  }
+
+  .hero-actions,
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .hero-actions .button,
+  .form-actions .button {
+    text-align: center;
+    width: 100%;
+  }
+
+  .workspace-panel {
+    border-radius: 20px;
+    padding: 1.25rem;
+  }
+
+  .workspace-card {
+    padding: 1.1rem;
+  }
+
+  .auth-form-card {
+    padding: 1.25rem;
+  }
+
+  .analysis-score-value {
+    font-size: 2.25rem;
+  }
+
+  .score-breakdown-row {
+    grid-template-columns: 1fr;
+  }
+
+  .score-breakdown-value {
+    text-align: left;
+  }
+
+  .toast-stack {
+    left: 1rem;
+    right: 1rem;
+  }
+
+  .toast {
+    min-width: 0;
   }
 }

@@ -1,0 +1,36 @@
+services:
+  - type: web
+    name: hirehub-backend
+    runtime: docker
+    repo: https://github.com/Sankalp2025/HireHub.git
+    branch: backend
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    healthCheckPath: /api/v1/health
+    envVars:
+      # Render's managed Postgres gives a connection string starting with
+      # postgresql://, but this backend's async engine needs the asyncpg
+      # driver prefix. Set this manually after the database is created:
+      # take the connection string Render shows you and change
+      # "postgresql://" to "postgresql+asyncpg://" at the start.
+      - key: DATABASE_URL
+        sync: false
+      - key: SECRET_KEY
+        generateValue: true
+      - key: ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_MINUTES
+        value: 60
+      - key: REFRESH_TOKEN_EXPIRE_DAYS
+        value: 7
+      - key: ENVIRONMENT
+        value: production
+      # Set this to your deployed Vercel URL once you have it, as a JSON
+      # array string, e.g. ["https://hirehub.vercel.app"]. Until then the
+      # backend will reject browser requests from the deployed frontend.
+      - key: BACKEND_CORS_ORIGINS
+        value: '["http://localhost:5173"]'
+
+databases:
+  - name: hirehub-db
+    plan: free
