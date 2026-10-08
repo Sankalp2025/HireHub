@@ -90,9 +90,7 @@ async def test_analysis_response_fields(client: AsyncClient):
     assert "python" in ko["matched_by_category"]["hard_skill"]
     assert "category_breakdown" in ko
     assert "hard_skill" in ko["category_breakdown"]
-    assert {"matched", "missing", "total", "score"} <= set(
-        ko["category_breakdown"]["hard_skill"]
-    )
+    assert {"matched", "missing", "total", "score"} <= set(ko["category_breakdown"]["hard_skill"])
     assert "missing_term_frequency" in ko
     assert ko["missing_term_frequency"]["kubernetes"] == 3
     assert ko["missing_term_frequency"]["ci/cd"] == 3
@@ -231,8 +229,7 @@ async def test_analysis_remains_fetchable_after_source_resume_update(client: Asy
     analysis_id = analysis_resp.json()["data"]["id"]
 
     updated_text = (
-        "Customer support specialist with retail operations and scheduling experience. "
-        * 4
+        "Customer support specialist with retail operations and scheduling experience. " * 4
     )
     update_resp = await client.patch(
         f"/api/v1/resumes/{resume_id}",
@@ -257,3 +254,74 @@ async def test_422_on_short_text(client: AsyncClient):
         headers=headers,
     )
     assert resp.status_code == 422
+
+
+async def test_get_analysis_by_id(client: AsyncClient):
+    headers = await auth_headers_for(client)
+    create_resp = await client.post(
+        "/api/v1/analyses",
+        json=analysis_raw_payload(resume_text=RESUME_TEXT, jd_text=JD_TEXT),
+        headers=headers,
+    )
+    analysis_id = create_resp.json()["data"]["id"]
+
+    resp = await client.get(f"/api/v1/analyses/{analysis_id}", headers=headers)
+    assert resp.status_code == 200
+    data = assert_success_envelope(resp)
+    assert data["id"] == analysis_id
+    assert "match_score" in data
+    assert "suggestions" in data
+
+
+async def test_get_nonexistent_analysis_returns_404(client: AsyncClient):
+    headers = await auth_headers_for(client)
+    resp = await client.get(
+        "/api/v1/analyses/00000000-0000-0000-0000-000000000000",
+        headers=headers,
+    )
+    assert_error_envelope(resp, 404)
+
+
+async def test_cannot_analyze_with_soft_deleted_resume(client: AsyncClient):
+    headers = await auth_headers_for(client)
+
+    resume_resp = await client.post(
+        "/api/v1/resumes",
+        json=resume_payload(title="To Delete", content=RESUME_TEXT),
+        headers=headers,
+    )
+    resume_id = resume_resp.json()["data"]["id"]
+    await client.delete(f"/api/v1/resumes/{resume_id}", headers=headers)
+
+    resp = await client.post(
+        "/api/v1/analyses",
+        json={"resume_id": resume_id, "jd_text": JD_TEXT},
+        headers=headers,
+    )
+    assert resp.status_code == 404
+
+
+async def test_cannot_analyze_with_soft_deleted_job_description(client: AsyncClient):
+    headers = await auth_headers_for(client)
+
+    jd_resp = await client.post(
+        "/api/v1/job-descriptions",
+        json=job_description_payload(title="To Delete", company=None, role=None, content=JD_TEXT),
+        headers=headers,
+    )
+    jd_id = jd_resp.json()["data"]["id"]
+    await client.delete(f"/api/v1/job-descriptions/{jd_id}", headers=headers)
+
+    resp = await client.post(
+        "/api/v1/analyses",
+        json={"resume_text": RESUME_TEXT, "jd_id": jd_id},
+        headers=headers,
+    )
+    assert resp.status_code == 404
+
+
+async def test_list_analyses_rejects_per_page_above_max(client: AsyncClient):
+    headers = await auth_headers_for(client)
+    resp = await client.get("/api/v1/analyses", params={"per_page": 101}, headers=headers)
+    error = assert_error_envelope(resp, 422)
+    assert error["code"] == "validation_error"

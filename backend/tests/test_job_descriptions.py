@@ -1,3 +1,4 @@
+import pytest
 from httpx import AsyncClient
 
 from tests.conftest import auth_headers_for
@@ -67,6 +68,19 @@ async def test_list_job_descriptions_rejects_invalid_per_page(client: AsyncClien
     resp = await client.get(
         "/api/v1/job-descriptions",
         params={"per_page": 0},
+        headers=headers,
+    )
+
+    error = assert_error_envelope(resp, 422)
+    assert error["code"] == "validation_error"
+
+
+async def test_list_job_descriptions_rejects_per_page_above_max(client: AsyncClient):
+    headers = await auth_headers_for(client)
+
+    resp = await client.get(
+        "/api/v1/job-descriptions",
+        params={"per_page": 101},
         headers=headers,
     )
 
@@ -163,51 +177,33 @@ async def test_cross_user_isolation(client: AsyncClient):
     assert resp.status_code == 404
 
 
-async def test_cross_user_cannot_update_job_description(client: AsyncClient):
+@pytest.mark.parametrize(
+    "method,body",
+    [
+        ("patch", {"title": "Stolen JD"}),
+        ("delete", None),
+    ],
+)
+async def test_cross_user_cannot_mutate_job_description(
+    client: AsyncClient, method: str, body: dict | None
+):
     headers_a = await auth_headers_for(client, email="a@example.com", full_name="User A")
     headers_b = await auth_headers_for(client, email="b@example.com", full_name="User B")
 
     create_resp = await client.post(
         "/api/v1/job-descriptions",
         json=job_description_payload(
-            title="Private JD",
-            company=None,
-            role=None,
-            content=LONG_CONTENT,
+            title="Private JD", company=None, role=None, content=LONG_CONTENT
         ),
         headers=headers_a,
     )
     jd_id = create_resp.json()["data"]["id"]
 
-    resp = await client.patch(
-        f"/api/v1/job-descriptions/{jd_id}",
-        json={"title": "Stolen JD"},
-        headers=headers_b,
-    )
-    assert resp.status_code == 404
-
-    owner_resp = await client.get(f"/api/v1/job-descriptions/{jd_id}", headers=headers_a)
-    assert owner_resp.status_code == 200
-    assert owner_resp.json()["data"]["title"] == "Private JD"
-
-
-async def test_cross_user_cannot_delete_job_description(client: AsyncClient):
-    headers_a = await auth_headers_for(client, email="a@example.com", full_name="User A")
-    headers_b = await auth_headers_for(client, email="b@example.com", full_name="User B")
-
-    create_resp = await client.post(
-        "/api/v1/job-descriptions",
-        json=job_description_payload(
-            title="Private JD",
-            company=None,
-            role=None,
-            content=LONG_CONTENT,
-        ),
-        headers=headers_a,
-    )
-    jd_id = create_resp.json()["data"]["id"]
-
-    resp = await client.delete(f"/api/v1/job-descriptions/{jd_id}", headers=headers_b)
+    request_fn = getattr(client, method)
+    if body is not None:
+        resp = await request_fn(f"/api/v1/job-descriptions/{jd_id}", json=body, headers=headers_b)
+    else:
+        resp = await request_fn(f"/api/v1/job-descriptions/{jd_id}", headers=headers_b)
     assert resp.status_code == 404
 
     owner_resp = await client.get(f"/api/v1/job-descriptions/{jd_id}", headers=headers_a)

@@ -105,7 +105,7 @@ app.dependency_overrides[get_db] = _override_get_db
 
 @pytest.fixture(autouse=True)
 async def _truncate_tables(request: pytest.FixtureRequest):
-    if "client" not in request.fixturenames:
+    if "client" not in request.fixturenames and "db" not in request.fixturenames:
         yield
         return
 
@@ -116,9 +116,7 @@ async def _truncate_tables(request: pytest.FixtureRequest):
 
 @pytest.fixture
 async def client() -> AsyncGenerator[AsyncClient, None]:
-    async with AsyncClient(
-        transport=ASGITransport(app=app), base_url="http://test"
-    ) as ac:
+    async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
         yield ac
 
 
