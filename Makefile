@@ -1,4 +1,4 @@
-.PHONY: demo demo-start demo-test
+.PHONY: demo demo-start demo-test demo-browser
 
 DEMO_COMPOSE = DB_CONTAINER_NAME=hirehub_demo_db \
 	BACKEND_CONTAINER_NAME=hirehub_demo_backend \
@@ -28,3 +28,7 @@ demo: demo-start
 
 demo-test: demo-start
 	@$(DEMO_COMPOSE) exec -T backend pytest demo/test_demo.py -q --no-cov
+
+# Requires the backend on :8000 and frontend on :5173; see demo/browser/README.md.
+demo-browser:
+	@node demo/browser/record_walkthrough.mjs
