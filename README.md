@@ -87,7 +87,23 @@ Infrastructure:
 - Docker Compose
 
 Frontend:
-- A React + TypeScript frontend built by a collaborator is in progress on the `frontend` branch and consumes this backend API.
+- A React + TypeScript + Vite frontend in `frontend/`, built by a collaborator
+  ([@skeshri23](https://github.com/skeshri23)). It covers registration and login,
+  resume management (pasted text or PDF upload), job descriptions, running an
+  analysis, and analysis history against this backend API.
+- Still in progress: automatic access-token refresh, pagination controls beyond
+  the first 20 items, and server-side logout.
+
+To run it locally with the backend up (`docker compose up --build -d`):
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Then open http://localhost:5173. The API URL defaults to
+`http://localhost:8000/api/v1` and can be overridden with `VITE_API_BASE_URL`.
 
 ## Local Setup
 
