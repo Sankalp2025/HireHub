@@ -39,3 +39,9 @@ print Playwright call logs containing credentials.
 Known frontend limitations: no automatic token refresh, lists limited to the
 first 20 records, mobile Analyze overflow, and client-only logout. Fresh accounts,
 one short session, and the desktop viewport avoid these in the demo.
+
+## README screenshots
+
+`make demo-screenshots` (same prerequisites) creates a fresh account through the
+API, then captures the real resume, analysis, and history pages at 2× into
+`docs/media/screenshots/`.

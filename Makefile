@@ -1,4 +1,4 @@
-.PHONY: demo demo-start demo-test demo-browser
+.PHONY: demo demo-start demo-test demo-browser demo-screenshots
 
 DEMO_COMPOSE = DB_CONTAINER_NAME=hirehub_demo_db \
 	BACKEND_CONTAINER_NAME=hirehub_demo_backend \
@@ -32,3 +32,6 @@ demo-test: demo-start
 # Requires the backend on :8000 and frontend on :5173; see demo/browser/README.md.
 demo-browser:
 	@node demo/browser/record_walkthrough.mjs
+
+demo-screenshots:
+	@node demo/browser/capture_screenshots.mjs

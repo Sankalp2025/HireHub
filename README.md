@@ -15,6 +15,19 @@ The demo uses the real local app and fictional resume and job-description data.
 - See matched terms and missing skills by category, with suggestions for edits.
 - Review saved analysis history.
 
+![Analysis result with match score, category breakdown, matched and missing skills, and suggestions](docs/media/screenshots/analysis.png)
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/media/screenshots/resumes.png" alt="Resume workspace with a saved resume version"></td>
+    <td width="50%"><img src="docs/media/screenshots/history.png" alt="Analysis history with a saved run and its full result"></td>
+  </tr>
+  <tr>
+    <td align="center">Saved resume versions</td>
+    <td align="center">Analysis history</td>
+  </tr>
+</table>
+
 TF-IDF cosine similarity is a wording diagnostic with **0% weight** in the match
 score; the current frontend labels it “Semantic similarity.”
 
