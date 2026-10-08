@@ -2,17 +2,65 @@
 
 HireHub is a resume and job description analysis platform. Users can register, save resumes, save job descriptions, run a match analysis, and review saved analysis history.
 
+![HireHub browser walkthrough](docs/media/hirehub-browser-demo.gif)
+
+[Watch the browser walkthrough (MP4)](docs/media/hirehub-browser-demo.mp4).
+The demo uses the real local app and fictional resume and job-description data.
+
+## What it does
+
+- Save resume versions by pasting text or uploading a PDF.
+- Save job descriptions for the roles you are targeting.
+- Run a deterministic, explainable match score based on category-weighted skill coverage.
+- See matched terms and missing skills by category, with suggestions for edits.
+- Review saved analysis history.
+
+TF-IDF cosine similarity is a wording diagnostic with **0% weight** in the match
+score; the current frontend labels it “Semantic similarity.”
+
+## Run it locally
+
+With a root `.env` configured from `.env.example`:
+
+```bash
+docker compose up --build -d
+cd frontend
+npm install
+npm run dev -- --port 5173 --strictPort
+# Open http://localhost:5173
+```
+
+To record the walkthrough yourself, see the [browser demo instructions](demo/browser/README.md).
+`make demo-browser` assumes the backend and frontend are already running.
+
+## Tech stack
+
+**Backend:** FastAPI, PostgreSQL, SQLAlchemy (async), Alembic, JWT/Argon2,
+pytest, Ruff, GitHub Actions, Docker Compose.
+
+**Frontend:** React, TypeScript, Vite, React Router, Axios.
+
+**Who built what:** Backend, matching engine, tests, and CI by Sankalp Deshmukh;
+frontend by [@skeshri23](https://github.com/skeshri23).
+
+Still in progress on the frontend: automatic access-token refresh, pagination
+beyond the first 20 items, and server-side logout.
+
+Verified locally: **142 non-smoke tests passed** against the dedicated test database.
+
+## Backend API demo
+
 ![HireHub backend demo](docs/media/hirehub-demo.gif)
 
-The demo runs the real FastAPI authentication and analysis flow against an
-isolated PostgreSQL database, then presents an explainable resume-job alignment
-score with category coverage, matched terms, skill gaps, and suggestions.
+The terminal demo runs the real FastAPI authentication and analysis flow against
+an isolated PostgreSQL database, showing category coverage, matched terms, skill
+gaps, and suggestions.
 
 ```bash
 make demo
 ```
 
-[Watch the MP4 version](docs/media/hirehub-demo.mp4) or read the
+[Watch the backend MP4](docs/media/hirehub-demo.mp4) or read the
 [demo details](demo/README.md).
 
 ## Current Status
