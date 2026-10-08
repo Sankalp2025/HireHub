@@ -25,9 +25,9 @@ const context = await browser.newContext({
   recordVideo: { dir: scratch, size: { width: 1280, height: 800 } },
 });
 const page = await context.newPage();
-// Video time starts with the page; marks where the GIF switches from fast setup to real-time results.
+// Video time starts with the page; marks where the GIF switches from fast sign-up to real-time workspace.
 const videoStart = Date.now();
-let resultsStart = 0;
+let workspaceStart = 0;
 page.setDefaultTimeout(15000);
 const video = page.video();
 const failures = [];
@@ -49,7 +49,9 @@ await page.addInitScript(() => {
   }).observe(document, { childList: true, subtree: true });
 });
 const pause = ms => page.waitForTimeout(ms);
-const SETUP_SPEEDUP = 3;
+const AUTH_SPEEDUP = 2;
+// Type short fields visibly so viewers can tell data is being entered.
+const typeInto = (label, text) => page.getByLabel(label, { exact: true }).pressSequentially(text, { delay: 35 });
 async function nav(name) {
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name, exact: true }).click();
 }
@@ -80,24 +82,26 @@ try {
   await expect(page.getByRole('heading', { name: 'Welcome back, Jordan Lee.' })).toBeVisible();
   await pause(2000);
 
+  workspaceStart = (Date.now() - videoStart) / 1000;
   await nav('Resumes');
-  await page.getByLabel('Resume title', { exact: true }).fill('Backend Resume v1');
+  await pause(1000);
+  await typeInto('Resume title', 'Backend Resume v1');
   await page.getByLabel('Resume content', { exact: true }).fill(resume);
-  await pause(1500);
+  await pause(2500);
   await page.getByRole('button', { name: 'Save resume', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Backend Resume v1', exact: true })).toBeVisible();
-  await pause(1800);
+  await pause(2500);
 
   await nav('Job descriptions');
-  await page.getByLabel('Title', { exact: true }).fill('Entry-level Backend Engineer');
-  await page.getByLabel('Company (optional)', { exact: true }).fill('Acme Corp');
+  await pause(1000);
+  await typeInto('Title', 'Entry-level Backend Engineer');
+  await typeInto('Company (optional)', 'Acme Corp');
   await page.getByLabel('Job description content', { exact: true }).fill(jd);
-  await pause(1500);
+  await pause(2500);
   await page.getByRole('button', { name: 'Save job description', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'Entry-level Backend Engineer', exact: true })).toBeVisible();
-  await pause(1800);
+  await pause(2500);
 
-  resultsStart = (Date.now() - videoStart) / 1000;
   await nav('Analyze');
   await page.getByRole('combobox', { name: /^Resume/ }).selectOption({ label: 'Backend Resume v1' });
   await page.getByRole('combobox', { name: /^Job description/ }).selectOption({ label: 'Entry-level Backend Engineer · Acme Corp' });
@@ -141,9 +145,9 @@ if (complete) {
   ffmpeg(['-ss', '0.8', '-i', `${base}.webm`, '-c:v', 'libx264', '-preset', 'slow', '-crf', '23', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', `${base}.mp4`]);
   const gif = join(scratch, 'demo.gif');
   for (const fps of [12, 10, 8]) {
-    // Play registration, login, and data entry at SETUP_SPEEDUP so viewers reach the analysis sooner.
-    const setup = `[0:v]trim=0.8:${resultsStart},setpts=(PTS-STARTPTS)/${SETUP_SPEEDUP}[setup]`;
-    const results = `[0:v]trim=start=${resultsStart},setpts=PTS-STARTPTS[results]`;
+    // Play landing, registration, and login at AUTH_SPEEDUP; data entry and results stay real-time.
+    const setup = `[0:v]trim=0.8:${workspaceStart},setpts=(PTS-STARTPTS)/${AUTH_SPEEDUP}[setup]`;
+    const results = `[0:v]trim=start=${workspaceStart},setpts=PTS-STARTPTS[results]`;
     const encode = `fps=${fps},scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`;
     ffmpeg(['-i', `${base}.webm`, '-filter_complex', `${setup};${results};[setup][results]concat=n=2:v=1:a=0,${encode}`, '-loop', '0', gif]);
     if ((await stat(gif)).size < 8 * 1024 * 1024) break;

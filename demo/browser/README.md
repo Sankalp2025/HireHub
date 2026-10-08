@@ -30,8 +30,8 @@ the score, even though the current UI labels it “Semantic similarity.”
 
 Output: `docs/media/hirehub-browser-demo.webm`, a real-time H.264 MP4, and a looping
 960px GIF (12 fps, reduced if needed to keep it below 8 MiB). The GIF plays
-registration, login, and data entry at 3× speed so the analysis appears within
-about 8 seconds; the results and history play in real time. Only the GIF and MP4 are
+landing, registration, and login at 2× speed; resume and job-description entry,
+results, and history play in real time. Only the GIF and MP4 are
 committed. The recorder rejects failed API responses, runtime errors, and error
 alerts/toasts; failures leave a temporary recording for inspection and never
 print Playwright call logs containing credentials.
