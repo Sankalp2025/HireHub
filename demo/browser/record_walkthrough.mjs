@@ -25,6 +25,9 @@ const context = await browser.newContext({
   recordVideo: { dir: scratch, size: { width: 1280, height: 800 } },
 });
 const page = await context.newPage();
+// Video time starts with the page; marks where the GIF switches from fast setup to real-time results.
+const videoStart = Date.now();
+let resultsStart = 0;
 page.setDefaultTimeout(15000);
 const video = page.video();
 const failures = [];
@@ -46,6 +49,7 @@ await page.addInitScript(() => {
   }).observe(document, { childList: true, subtree: true });
 });
 const pause = ms => page.waitForTimeout(ms);
+const SETUP_SPEEDUP = 3;
 async function nav(name) {
   await page.getByRole('navigation', { name: 'Primary' }).getByRole('link', { name, exact: true }).click();
 }
@@ -93,6 +97,7 @@ try {
   await expect(page.getByRole('heading', { name: 'Entry-level Backend Engineer', exact: true })).toBeVisible();
   await pause(1800);
 
+  resultsStart = (Date.now() - videoStart) / 1000;
   await nav('Analyze');
   await page.getByRole('combobox', { name: /^Resume/ }).selectOption({ label: 'Backend Resume v1' });
   await page.getByRole('combobox', { name: /^Job description/ }).selectOption({ label: 'Entry-level Backend Engineer · Acme Corp' });
@@ -136,7 +141,11 @@ if (complete) {
   ffmpeg(['-ss', '0.8', '-i', `${base}.webm`, '-c:v', 'libx264', '-preset', 'slow', '-crf', '23', '-pix_fmt', 'yuv420p', '-movflags', '+faststart', `${base}.mp4`]);
   const gif = join(scratch, 'demo.gif');
   for (const fps of [12, 10, 8]) {
-    ffmpeg(['-ss', '0.8', '-i', `${base}.webm`, '-filter_complex', `fps=${fps},scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`, '-loop', '0', gif]);
+    // Play registration, login, and data entry at SETUP_SPEEDUP so viewers reach the analysis sooner.
+    const setup = `[0:v]trim=0.8:${resultsStart},setpts=(PTS-STARTPTS)/${SETUP_SPEEDUP}[setup]`;
+    const results = `[0:v]trim=start=${resultsStart},setpts=PTS-STARTPTS[results]`;
+    const encode = `fps=${fps},scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=max_colors=96:stats_mode=diff[p];[b][p]paletteuse=dither=none:diff_mode=rectangle`;
+    ffmpeg(['-i', `${base}.webm`, '-filter_complex', `${setup};${results};[setup][results]concat=n=2:v=1:a=0,${encode}`, '-loop', '0', gif]);
     if ((await stat(gif)).size < 8 * 1024 * 1024) break;
   }
   if ((await stat(gif)).size >= 8 * 1024 * 1024) throw new Error('GIF exceeds 8 MiB; shorten the pauses.');
